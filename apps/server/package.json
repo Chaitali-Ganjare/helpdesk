@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun"
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "seed:user": "bun --env-file .env run scripts/seed-user.ts"
   },
   "dependencies": {
     "@prisma/client": "5",
