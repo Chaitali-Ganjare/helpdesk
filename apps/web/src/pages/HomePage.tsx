@@ -6,10 +6,12 @@ export default function HomePage() {
 
   return (
     <>
-      <NavBar userName={session?.user.name ?? ""} />
-      <main className="page">
-        <h2>Dashboard</h2>
-        <p className="page-sub">Welcome back, {session?.user.name}.</p>
+      <NavBar />
+      <main className="py-10 px-8 max-w-[1100px] mx-auto">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard</h2>
+        <p className="mt-1.5 text-[15px] text-slate-500">
+          Welcome back, {session?.user.name}.
+        </p>
       </main>
     </>
   );

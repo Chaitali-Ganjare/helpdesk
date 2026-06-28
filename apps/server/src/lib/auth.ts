@@ -12,4 +12,12 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: true,
   },
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        input: false,
+      },
+    },
+  },
 });

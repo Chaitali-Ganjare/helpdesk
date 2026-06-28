@@ -3,6 +3,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate, Navigate } from "react-router-dom";
 import { authClient } from "../lib/auth-client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -35,45 +45,63 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-wrapper">
-      <div className="login-card">
-        <div className="login-logo">H</div>
-        <h1>Welcome back</h1>
-        <p className="login-subtitle">Sign in to your Helpdesk account</p>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="field">
-            <label htmlFor="email">Email address</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              autoFocus
-              className={errors.email ? "invalid" : ""}
-              {...register("email")}
-            />
-            {errors.email && <span className="field-error">{errors.email.message}</span>}
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-6">
+      <Card className="w-full max-w-sm shadow-md">
+        <CardHeader className="space-y-3">
+          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground text-lg font-bold">
+            H
           </div>
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              className={errors.password ? "invalid" : ""}
-              {...register("password")}
-            />
-            {errors.password && <span className="field-error">{errors.password.message}</span>}
+          <div>
+            <CardTitle className="text-xl">Welcome back</CardTitle>
+            <CardDescription className="mt-1">
+              Sign in to your Helpdesk account
+            </CardDescription>
           </div>
-          <button className="btn-submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in…" : "Sign in"}
-          </button>
-          {errors.root && (
-            <div className="error-box">
-              <span>⚠</span> {errors.root.message}
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                autoFocus
+                aria-invalid={!!errors.email}
+                {...register("email")}
+              />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
             </div>
-          )}
-        </form>
-      </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                aria-invalid={!!errors.password}
+                {...register("password")}
+              />
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
+            </div>
+
+            {errors.root && (
+              <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2.5">
+                {errors.root.message}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
