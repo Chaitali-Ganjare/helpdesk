@@ -1,9 +1,14 @@
 import express from "express";
 import cors from "cors";
+import { toNodeHandler } from "better-auth/node";
 import { prisma } from "./lib/prisma";
+import { auth } from "./lib/auth";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
+
+app.set("trust proxy", true);
+app.all("/api/auth/*", toNodeHandler(auth));
 
 app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
