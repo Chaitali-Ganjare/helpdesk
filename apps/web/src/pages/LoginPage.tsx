@@ -38,7 +38,9 @@ export default function LoginPage() {
   async function onSubmit(data: FormData) {
     const { error } = await authClient.signIn.email(data);
     if (error) {
-      setError("root", { message: error.message ?? "Invalid email or password" });
+      // Use a fixed message regardless of the server's error detail to prevent
+      // user enumeration (distinguishing "email not found" from "wrong password").
+      setError("root", { message: "Invalid email or password" });
     } else {
       navigate("/");
     }

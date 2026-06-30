@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { authClient } from "../lib/auth-client";
 
 export default function NavBar() {
   const { data: session } = authClient.useSession();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const userName = session?.user.name ?? "";
   const isAdmin = (session?.user as { role?: string })?.role === "ADMIN";
 
@@ -14,8 +16,17 @@ export default function NavBar() {
     .toUpperCase();
 
   async function handleSignOut() {
-    await authClient.signOut();
-    window.location.href = "/login";
+    setIsSigningOut(true);
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          window.location.href = "/login";
+        },
+        onError: () => {
+          setIsSigningOut(false);
+        },
+      },
+    });
   }
 
   return (
@@ -42,10 +53,11 @@ export default function NavBar() {
           {initials}
         </div>
         <button
-          className="px-3.5 py-[7px] text-[13px] font-medium border border-slate-200 rounded-lg bg-white text-slate-500 cursor-pointer hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-colors"
+          className="px-3.5 py-[7px] text-[13px] font-medium border border-slate-200 rounded-lg bg-white text-slate-500 cursor-pointer hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSignOut}
+          disabled={isSigningOut}
         >
-          Sign out
+          {isSigningOut ? "Signing out…" : "Sign out"}
         </button>
       </div>
     </nav>

@@ -6,6 +6,7 @@
     "dev": "bun run --filter '*' dev",
     "dev:server": "bun run --cwd apps/server dev",
     "dev:web": "bun run --cwd apps/web dev",
-    "build": "bun run --filter '*' build"
+    "build": "bun run --filter '*' build",
+    "test:e2e": "bun run --cwd apps/e2e test"
   }
 }
