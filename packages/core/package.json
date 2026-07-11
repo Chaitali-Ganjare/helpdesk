@@ -1,0 +1,14 @@
+{
+  "name": "@helpdesk/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./schemas/users": "./src/schemas/users.ts"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  }
+}

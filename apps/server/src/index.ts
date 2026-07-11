@@ -27,8 +27,8 @@ const authLimiter = rateLimit({
 app.use("/api/auth/sign-in", authLimiter);
 
 // Auth handler must be before CORS, Helmet, and body parsing.
-// Use `/*` (Express 4 wildcard) — *splat named wildcards are Express 5 only.
-app.all("/api/auth/*", toNodeHandler(auth));
+// Express 5's path-to-regexp requires a named wildcard (`*splat`), not a bare `*`.
+app.all("/api/auth/*splat", toNodeHandler(auth));
 
 // Standard security headers (CSP, X-Frame-Options, HSTS, etc.)
 app.use(helmet());

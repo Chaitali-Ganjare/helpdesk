@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
 import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import NavBar from "../components/NavBar";
+import CreateUserModal from "../components/CreateUserModal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type User = {
@@ -12,32 +13,22 @@ type User = {
 };
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[] | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadUsers() {
-      try {
-        const res = await axios.get("/api/users");
-        if (!cancelled) setUsers(res.data.users);
-      } catch {
-        if (!cancelled) setError(true);
-      }
-    }
-
-    loadUsers();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { data: users, isError: error } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      const res = await axios.get("/api/users");
+      return res.data.users as User[];
+    },
+  });
 
   return (
     <>
       <NavBar />
       <main className="py-10 px-8 max-w-[1100px] mx-auto">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Users</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Users</h2>
+          <CreateUserModal />
+        </div>
 
         {error && (
           <p className="mt-4 text-sm text-destructive">
@@ -45,7 +36,7 @@ export default function UsersPage() {
           </p>
         )}
 
-        {!error && users === null && (
+        {!error && users === undefined && (
           <p className="mt-4 text-sm text-slate-500">Loading…</p>
         )}
 
@@ -61,7 +52,7 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users === null &&
+                {users === undefined &&
                   Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i}>
                       <td className="px-4 py-3">
