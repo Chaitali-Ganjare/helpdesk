@@ -135,5 +135,23 @@ POSTMARK_SERVER_TOKEN=
 POSTMARK_FROM_EMAIL=
 ```
 
+## Testing (Playwright E2E)
+E2E tests live in `apps/e2e` (config: `apps/e2e/playwright.config.ts`).
+
+```bash
+# Run from repo root
+bun run test:e2e
+
+# Or from apps/e2e
+bun run test         # headless
+bun run test:ui      # Playwright UI mode
+bun run test:headed  # headed browser
+bun run test:debug   # debug mode
+```
+
+- `testDir` is `apps/e2e/tests`; tests run sequentially (`fullyParallel: false`, `workers: 1`) since they share one MySQL database — no parallel writes.
+- `baseURL` is `http://localhost:5173`; the `webServer` config auto-starts both the Express test server (`bun run start:test` in `apps/server`, using `apps/server/.env.test`) and the Vite dev server — tests never start servers themselves.
+- `globalSetup` (`apps/e2e/global-setup.ts`) runs `prisma migrate reset --force --skip-seed` then `bun run seed:user` to create the seeded admin before each run. `globalTeardown` is a no-op — cleanup happens at the *start* of the next run, not the end, so tests must not depend on leftover state from a previous file.
+
 ## MCP Servers
 - **context7** — fetch up-to-date library docs. Use before working with any external library.
