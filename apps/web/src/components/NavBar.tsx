@@ -32,12 +32,15 @@ export default function NavBar() {
   return (
     <nav className="flex items-center justify-between px-7 h-[60px] bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2.5 font-bold text-base text-slate-900 tracking-tight">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 font-bold text-base text-slate-900 tracking-tight"
+        >
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
             H
           </div>
           Helpdesk
-        </div>
+        </Link>
         {isAdmin && (
           <Link
             to="/users"

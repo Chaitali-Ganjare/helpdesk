@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import NavBar from "../components/NavBar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type User = {
   id: string;
@@ -44,9 +45,11 @@ export default function UsersPage() {
           </p>
         )}
 
-        {!error && !users && <p className="mt-4 text-sm text-slate-500">Loading…</p>}
+        {!error && users === null && (
+          <p className="mt-4 text-sm text-slate-500">Loading…</p>
+        )}
 
-        {!error && users && (
+        {!error && (
           <div className="mt-6 overflow-hidden rounded-lg border border-slate-200">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500">
@@ -58,7 +61,24 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.map((user) => (
+                {users === null &&
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i}>
+                      <td className="px-4 py-3">
+                        <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Skeleton className="h-4 w-40" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Skeleton className="h-5 w-14 rounded-full" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Skeleton className="h-4 w-20" />
+                      </td>
+                    </tr>
+                  ))}
+                {users?.map((user) => (
                   <tr key={user.id}>
                     <td className="px-4 py-3 font-medium text-slate-900">{user.name}</td>
                     <td className="px-4 py-3 text-slate-500">{user.email}</td>
@@ -81,7 +101,7 @@ export default function UsersPage() {
               </tbody>
             </table>
 
-            {users.length === 0 && (
+            {users?.length === 0 && (
               <p className="px-4 py-6 text-center text-sm text-slate-500">No users yet.</p>
             )}
           </div>
