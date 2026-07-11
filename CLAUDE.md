@@ -153,5 +153,7 @@ bun run test:debug   # debug mode
 - `baseURL` is `http://localhost:5173`; the `webServer` config auto-starts both the Express test server (`bun run start:test` in `apps/server`, using `apps/server/.env.test`) and the Vite dev server — tests never start servers themselves.
 - `globalSetup` (`apps/e2e/global-setup.ts`) runs `prisma migrate reset --force --skip-seed` then `bun run seed:user` to create the seeded admin before each run. `globalTeardown` is a no-op — cleanup happens at the *start* of the next run, not the end, so tests must not depend on leftover state from a previous file.
 
+Use the **e2e-test-writer** subagent to write, extend, or fix Playwright tests — after implementing/changing a user-facing flow (login, ticket views, agent/admin actions, role-gated pages), or whenever asked to add/update/debug an e2e test. It knows this project's Playwright conventions (locator strategy, avoiding flaky waits, shared-database test isolation); don't hand-write e2e specs directly when it applies.
+
 ## MCP Servers
 - **context7** — fetch up-to-date library docs. Use before working with any external library.
