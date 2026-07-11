@@ -55,6 +55,10 @@ bun run --filter @helpdesk/server dev
 - Vite proxies `/api/*` → `http://localhost:3000` in dev — no hardcoded backend URLs in the frontend
 - CORS is configured on the server for `http://localhost:5173` only
 
+## Frontend Data Fetching
+- Use `axios` for HTTP calls, not the native `fetch`
+- Use `@tanstack/react-query` (`useQuery`/`useMutation`) for server state — don't hand-roll loading/error state with `useEffect` + `useState`
+
 ## Express Conventions
 - Routes are modular: create `src/routes/<resource>.ts` using `express.Router()`, mount in `src/index.ts` with `app.use('/api/<resource>', router)`
 - Error handler is always the last middleware: `(err, req, res, next) => { ... }`

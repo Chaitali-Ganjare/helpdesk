@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import axios from "axios";
 import NavBar from "../components/NavBar";
 
 type User = {
@@ -18,10 +19,8 @@ export default function UsersPage() {
 
     async function loadUsers() {
       try {
-        const res = await fetch("/api/users");
-        if (!res.ok) throw new Error("Request failed");
-        const data = await res.json();
-        if (!cancelled) setUsers(data.users);
+        const res = await axios.get("/api/users");
+        if (!cancelled) setUsers(res.data.users);
       } catch {
         if (!cancelled) setError(true);
       }
