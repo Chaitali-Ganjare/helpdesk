@@ -159,5 +159,29 @@ bun run test:debug   # debug mode
 
 Use the **e2e-test-writer** subagent to write, extend, or fix Playwright tests — after implementing/changing a user-facing flow (login, ticket views, agent/admin actions, role-gated pages), or whenever asked to add/update/debug an e2e test. It knows this project's Playwright conventions (locator strategy, avoiding flaky waits, shared-database test isolation); don't hand-write e2e specs directly when it applies.
 
+## Testing (Component/Unit — Vitest)
+Component tests live alongside source in `apps/web/src` (e.g. `UsersPage.test.tsx` next to `UsersPage.tsx`), run with Vitest + React Testing Library.
+
+### Running
+
+```bash
+# From apps/web
+bun run test         # vitest run (single pass)
+bun run test:watch   # vitest watch mode — rerun on save while writing tests
+bun run test:ui      # vitest UI mode — visual browser-based test runner
+```
+
+- Config: `apps/web/vitest.config.ts` (`environment: "jsdom"`, setup file at `apps/web/src/test/setup.ts` which loads `@testing-library/jest-dom`).
+- Scripts are pinned to `bun --bun vitest ...` — plain `vitest`/`bunx vitest` fails on this machine's Node 18 (Vitest 4's `rolldown` dependency needs `node:util`'s `styleText`, added in Node 22). Always run Vitest through Bun's own runtime here, not the system Node.
+
+### Writing
+
+- File naming: `<Component>.test.tsx` colocated next to the component it tests (not a separate `__tests__` folder).
+- Prefer accessible RTL queries (`getByRole`, `getByLabelText`, `getByText`) over test IDs, same as the Playwright convention. Use `findBy*`/`waitFor` for anything that resolves after an async fetch — don't wrap assertions in manual `setTimeout`/`act` hacks.
+- Use `renderWithQuery` from `apps/web/src/test/render-with-query.tsx` instead of RTL's `render` for any component that reads from `@tanstack/react-query` — it wraps the component in a fresh `QueryClientProvider` (`retry: false`) per test.
+- The app's `QueryClientProvider` lives in `apps/web/src/App.tsx`; components using `<Link>`/`useNavigate` etc. still need a `MemoryRouter` wrapped around them in the test itself (`renderWithQuery` doesn't provide routing context).
+- Mock `../lib/auth-client`'s `authClient.useSession()` in tests for any component that renders `NavBar`, rather than letting the real better-auth client attempt a network call.
+- Mock `axios` (`vi.mock("axios")` + `vi.mocked(axios.get).mockResolvedValue(...)`/`mockRejectedValue(...)`) instead of hitting the real API — component tests should never require the Express/MySQL dev stack to be running. See `apps/web/src/pages/UsersPage.test.tsx` for the reference pattern (success + error-state cases).
+
 ## MCP Servers
 - **context7** — fetch up-to-date library docs. Use before working with any external library.
