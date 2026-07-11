@@ -15,7 +15,8 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
+  reporter: [["html", { outputFolder: path.resolve(__dirname, "playwright-report") }], ["list"]],
+  outputDir: path.resolve(__dirname, "test-results"),
   use: {
     baseURL: "http://localhost:5173",
     trace: "on-first-retry",
