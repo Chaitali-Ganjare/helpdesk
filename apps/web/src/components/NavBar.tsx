@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import { Role } from "@helpdesk/core/enums/role";
+import { Link } from "@/components/ui/link";
 import { authClient } from "../lib/auth-client";
 
 export default function NavBar() {
@@ -33,7 +34,7 @@ export default function NavBar() {
   return (
     <nav className="flex items-center justify-between px-7 h-[60px] bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
       <div className="flex items-center gap-6">
-        <Link
+        <RouterLink
           to="/"
           className="flex items-center gap-2.5 font-bold text-base text-slate-900 tracking-tight"
         >
@@ -41,18 +42,12 @@ export default function NavBar() {
             H
           </div>
           Helpdesk
-        </Link>
-        <Link
-          to="/tickets"
-          className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
-        >
+        </RouterLink>
+        <Link to="/tickets" variant="nav" className="text-[13px] font-medium">
           Tickets
         </Link>
         {isAdmin && (
-          <Link
-            to="/users"
-            className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
-          >
+          <Link to="/users" variant="nav" className="text-[13px] font-medium">
             Users
           </Link>
         )}
