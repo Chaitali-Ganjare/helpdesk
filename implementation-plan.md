@@ -6,28 +6,28 @@
 - [ ] Set up Neon Postgres database and connect with Prisma
 - [ ] Define full database schema (users, sessions, tickets, messages, knowledge base chunks)
 - [ ] Enable pgvector extension on Postgres
-- [ ] Set up environment variable structure (`.env.example`)
+- [x] Set up environment variable structure (`.env.example`)
 
 ## Phase 2 — Authentication
 
-- [ ] Install and configure NextAuth.js with the Prisma adapter (database sessions)
-- [ ] Build login page (`/login`)
-- [ ] Add route middleware to protect all dashboard routes
-- [ ] Implement role-based access control (admin vs. agent)
-- [ ] Write database seed script to create the initial admin account
+- [x] Install and configure NextAuth.js with the Prisma adapter (database sessions)
+- [x] Build login page (`/login`)
+- [x] Add route middleware to protect all dashboard routes
+- [x] Implement role-based access control (admin vs. agent)
+- [x] Write database seed script to create the initial admin account
 
 ## Phase 3 — User Management (Admin)
 
-- [ ] Build user list page (`/admin/users`)
-- [ ] Add create-agent form (admin only)
-- [ ] Add deactivate/delete agent action
+- [x] Build user list page (`/admin/users`)
+- [x] Add create-agent form (admin only)
+- [x] Add deactivate/delete agent action
 
 ## Phase 4 — Email Ingestion
 
 - [ ] Configure Postmark inbound email webhook
-- [ ] Build POST `/api/webhooks/email` endpoint to receive inbound emails
-- [ ] Parse email payload and create a ticket + initial message in the database
-- [ ] Handle duplicate detection (same Message-ID)
+- [x] Build POST `/api/webhooks/email` endpoint to receive inbound emails
+- [x] Parse email payload and create a ticket + initial message in the database
+- [x] Handle duplicate detection (same Message-ID)
 
 ## Phase 5 — Ticket Dashboard
 

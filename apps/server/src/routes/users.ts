@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { requireAdmin } from "../middleware/auth";
 import { Role } from "../generated/prisma";
+import { parseBody } from "../lib/validate";
 import {
   createUserSchema,
   editUserSchema,
@@ -20,18 +21,15 @@ router.get("/", requireAdmin, async (_req: Request, res: Response) => {
 });
 
 router.post("/", requireAdmin, async (req: Request, res: Response) => {
-  const parsed = createUserSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.issues[0].message });
-    return;
-  }
+  const data = parseBody(createUserSchema, req.body, res);
+  if (!data) return;
 
-  if (await emailExists(parsed.data.email)) {
+  if (await emailExists(data.email)) {
     res.status(409).json({ error: "A user with this email already exists" });
     return;
   }
 
-  const user = await createUser(parsed.data);
+  const user = await createUser(data);
   res.status(201).json({ user });
 });
 
@@ -39,11 +37,8 @@ router.patch(
   "/:id",
   requireAdmin,
   async (req: Request<{ id: string }>, res: Response) => {
-    const parsed = editUserSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.issues[0].message });
-      return;
-    }
+    const data = parseBody(editUserSchema, req.body, res);
+    if (!data) return;
 
     const existingUser = await getUserById(req.params.id);
     if (!existingUser) {
@@ -51,12 +46,12 @@ router.patch(
       return;
     }
 
-    if (await emailExists(parsed.data.email, req.params.id)) {
+    if (await emailExists(data.email, req.params.id)) {
       res.status(409).json({ error: "A user with this email already exists" });
       return;
     }
 
-    const user = await updateUser(req.params.id, parsed.data);
+    const user = await updateUser(req.params.id, data);
     res.json({ user });
   }
 );

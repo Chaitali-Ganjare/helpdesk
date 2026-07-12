@@ -81,7 +81,8 @@ bun run --filter @helpdesk/server dev
 - Business logic (Prisma queries, hashing, etc.) lives in `src/services/<resource>.ts`, not inline in the route file. Routes stay thin: parse/validate the request, call into the service, translate the result into an HTTP response (status code + JSON). See `apps/server/src/services/users.ts` + `apps/server/src/routes/users.ts` for the reference split.
 - Error handler is always the last middleware: `(err, req, res, next) => { ... }`
 - No `try/catch` needed in async route handlers — Express 5 automatically catches rejected promises/thrown errors from `async` handlers and forwards them to the error-handling middleware. Just `await` and let it throw; don't wrap in `try { ... } catch (err) { next(err) }`. Wildcard route paths need Express 5's named-wildcard syntax (`*splat`, not a bare `*`) — see the `/api/auth/*splat` mount in `src/index.ts`.
-- Validate request bodies with `zod` (`z.object({...}).safeParse(req.body)`) rather than hand-rolled `typeof`/regex checks — return `400` with `parsed.error.issues[0].message` on failure. If the frontend submits this same shape, the schema belongs in `@helpdesk/core` (see **Shared Schemas** above), re-exported from the service module; otherwise define it directly in the service module alongside the logic it validates input for.
+- Validate request bodies with `zod` rather than hand-rolled `typeof`/regex checks. If the frontend submits this same shape, the schema belongs in `@helpdesk/core` (see **Shared Schemas** above), re-exported from the service module; otherwise define it directly in the service module alongside the logic it validates input for.
+- Use `parseBody(schema, req.body, res)` from `apps/server/src/lib/validate.ts` to apply that schema in a route handler — don't hand-roll `schema.safeParse(req.body)` + the `400` response inline. It returns the typed, parsed data on success, or writes the `400` response itself and returns `undefined` on failure — the handler just does `const data = parseBody(schema, req.body, res); if (!data) return;` and continues, same as any other early-return guard. See `apps/server/src/routes/users.ts` and `apps/server/src/routes/webhooks.ts` for the reference usage.
 
 ## Auth (better-auth + Prisma Adapter)
 Uses `better-auth` with `prismaAdapter` for database-backed sessions (no JWTs).
@@ -139,6 +140,25 @@ bunx prisma studio
 - The `AGENT` default is declared once, in the schema's `role Role @default(AGENT)`. Routes that create a `User` without an explicit role (e.g. `POST /api/users`) should omit the `role` field and let Prisma apply that default, rather than passing `Role.AGENT` explicitly — keeps the default in one place. Routes that need a specific non-default role (like the seed script's `ADMIN`) should pass it explicitly using the generated `Role` enum from `../generated/prisma`, never a raw string.
 - `User` is soft-deleted (`deletedAt DateTime?`), never hard-deleted — the row and its history are kept. `services/users.ts`'s `deleteUser` sets `deletedAt`, deletes the user's `Session` rows (revokes any active login immediately), and deletes their credential `Account` (blocks future sign-in — better-auth has no row to check the password against). Every read that lists or looks up a user for editing (`listUsers`, `getUserById`) must filter `deletedAt: null` so deleted users disappear from the admin UI and 404 on edit/delete. `ADMIN` users cannot be deleted (`DELETE /api/users/:id` returns 403) — enforced in the route, not the UI, since the UI is just an admin's convenience, not the security boundary.
 
+## Email Ingestion (Postmark)
+An inbound email to the configured support address arrives as a Postmark webhook `POST /api/webhooks/email`, converted 1:1 into a `Ticket` row (`apps/server/src/routes/webhooks.ts` + `apps/server/src/services/tickets.ts` — same routes/services split as `users`).
+
+**Field mapping** (Postmark payload → `Ticket`):
+
+| Postmark field | `Ticket` field |
+|---|---|
+| `Subject` | `subject` |
+| `TextBody` (falls back to `HtmlBody` if `TextBody` is empty, no HTML stripping) | `body` |
+| `FromFull.Email` | `fromEmail` |
+| `FromFull.Name` | `fromName` |
+| `MessageID` | `messageId` |
+
+**Auth**: the route is unauthenticated by session (Postmark has no browser session) — instead it's gated by `requirePostmarkAuth` (`apps/server/src/middleware/postmarkAuth.ts`), which checks HTTP Basic Auth against `POSTMARK_INBOUND_USERNAME`/`POSTMARK_INBOUND_PASSWORD` using `crypto.timingSafeEqual` on hashed values, never `===`. Configure Postmark's inbound webhook URL with the credentials embedded directly in it — `https://user:pass@yourdomain.com/api/webhooks/email` (set under the inbound stream's "Webhook URL" in Postmark's dashboard) — Postmark base64-encodes that into the `Authorization` header automatically; no separate header configuration needed on Postmark's side.
+
+**Dedup**: `Ticket.messageId` is unique. `findTicketByMessageId` is checked *before* `createTicketFromEmail` (same "check existence first" pattern as `emailExists` before `createUser` — not a caught unique-constraint error). A duplicate `MessageID` returns `200` (not an error), because Postmark retries webhook deliveries on non-2xx responses and a re-delivered duplicate is an expected no-op, not a failure.
+
+Processing is synchronous (no queue) — a deliberate choice while volume is small; revisit if/when this becomes a bottleneck. There's no ticket-listing endpoint, dashboard UI, AI classification, or outbound-reply handling yet — this is inbound ingestion only.
+
 ## Environment Variables
 Copy `.env.example` to `.env` in `apps/server/`. Required vars:
 
@@ -159,6 +179,8 @@ SEED_ROLE=ADMIN
 ANTHROPIC_API_KEY=
 POSTMARK_SERVER_TOKEN=
 POSTMARK_FROM_EMAIL=
+POSTMARK_INBOUND_USERNAME=     # Basic Auth username for the inbound webhook; embed in the Postmark-configured URL
+POSTMARK_INBOUND_PASSWORD=     # Basic Auth password for the inbound webhook; embed in the Postmark-configured URL
 ```
 
 ## Testing (Playwright E2E)

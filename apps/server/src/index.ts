@@ -6,6 +6,7 @@ import { toNodeHandler } from "better-auth/node";
 import { prisma } from "./lib/prisma";
 import { auth } from "./lib/auth";
 import usersRouter from "./routes/users";
+import webhooksRouter from "./routes/webhooks";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
@@ -57,6 +58,7 @@ app.get("/api/health", async (_req: Request, res: Response, next: NextFunction) 
 });
 
 app.use("/api/users", usersRouter);
+app.use("/api/webhooks", webhooksRouter);
 
 // Global error handler — must be the last middleware registered.
 // Logs the full error server-side; sends a generic message to the client.
