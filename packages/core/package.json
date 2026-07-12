@@ -4,7 +4,10 @@
   "type": "module",
   "exports": {
     "./schemas/users": "./src/schemas/users.ts",
-    "./enums/role": "./src/enums/role.ts"
+    "./enums/role": "./src/enums/role.ts",
+    "./enums/ticket-status": "./src/enums/ticket-status.ts",
+    "./enums/ticket-category": "./src/enums/ticket-category.ts",
+    "./enums/ticket-priority": "./src/enums/ticket-priority.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"

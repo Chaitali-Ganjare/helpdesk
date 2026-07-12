@@ -67,15 +67,17 @@ model Verification {
 // ─── Helpdesk models ──────────────────────────────────────────────
 
 model Ticket {
-  id        String       @id @default(cuid())
+  id        String         @id @default(cuid())
   subject   String
   body      String
   fromEmail String
   fromName  String?
-  status    TicketStatus @default(OPEN)
-  messageId String?      @unique
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  status    TicketStatus   @default(OPEN)
+  category  TicketCategory?
+  priority  TicketPriority?
+  messageId String?        @unique
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 }
 
 // ─── Enums ────────────────────────────────────────────────────────
@@ -89,4 +91,21 @@ enum TicketStatus {
   OPEN
   RESOLVED
   CLOSED
+}
+
+// AI-classified on creation (see services/tickets.ts's classifyTicket) —
+// nullable because classification happens asynchronously, after the ticket
+// row already exists.
+enum TicketCategory {
+  TECHNICAL
+  BILLING
+  ACCOUNT
+  GENERAL
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }

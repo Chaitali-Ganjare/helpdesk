@@ -9,6 +9,7 @@
     "start:test": "bun run --env-file .env.test src/index.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
     "@helpdesk/core": "workspace:*",
     "@prisma/client": "5",
     "better-auth": "^1.6.22",

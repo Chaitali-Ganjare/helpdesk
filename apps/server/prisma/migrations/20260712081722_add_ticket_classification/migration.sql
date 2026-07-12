@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `Ticket` ADD COLUMN `category` ENUM('TECHNICAL', 'BILLING', 'ACCOUNT', 'GENERAL') NULL,
+    ADD COLUMN `priority` ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') NULL;

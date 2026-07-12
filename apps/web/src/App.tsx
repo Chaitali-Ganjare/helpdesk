@@ -5,6 +5,7 @@ import { authClient } from "./lib/auth-client";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
 import UsersPage from "./pages/UsersPage";
+import TicketsPage from "./pages/TicketsPage";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,14 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/tickets"
+            element={
+              <ProtectedRoute>
+                <TicketsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/users"
             element={

@@ -1,5 +1,9 @@
 import { z } from "zod";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
+import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
 import { prisma } from "../lib/prisma";
+import { anthropic } from "../lib/anthropic";
 
 // Mirrors the fields we consume from Postmark's inbound webhook payload —
 // https://postmarkapp.com/developer/webhooks/inbound-webhook
@@ -26,6 +30,24 @@ export const postmarkInboundSchema = z
 
 export type PostmarkInboundPayload = z.infer<typeof postmarkInboundSchema>;
 
+const ticketListFields = {
+  id: true,
+  subject: true,
+  fromEmail: true,
+  fromName: true,
+  status: true,
+  category: true,
+  priority: true,
+  createdAt: true,
+} as const;
+
+export function listTickets() {
+  return prisma.ticket.findMany({
+    select: ticketListFields,
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export function findTicketByMessageId(messageId: string) {
   return prisma.ticket.findUnique({ where: { messageId } });
 }
@@ -41,5 +63,40 @@ export function createTicketFromEmail(payload: PostmarkInboundPayload) {
       fromName: payload.FromFull.Name || null,
       messageId: payload.MessageID,
     },
+  });
+}
+
+const classificationSchema = z.object({
+  category: z.enum(Object.values(TicketCategory) as [TicketCategory, ...TicketCategory[]]),
+  priority: z.enum(Object.values(TicketPriority) as [TicketPriority, ...TicketPriority[]]),
+});
+
+// Classifies a ticket's category + priority via Claude, then writes the
+// result. Called fire-and-forget from the webhook route (after it has
+// already responded to Postmark) — never awaited on the request path, so a
+// slow or failed classification never delays or breaks ticket creation.
+// `category`/`priority` simply stay null if this doesn't complete.
+export async function classifyTicket(ticketId: string, subject: string, body: string) {
+  const response = await anthropic.messages.parse({
+    model: "claude-opus-4-8",
+    max_tokens: 256,
+    output_config: {
+      effort: "low",
+      format: zodOutputFormat(classificationSchema),
+    },
+    messages: [
+      {
+        role: "user",
+        content: `Classify this support ticket into a category and priority.\n\nSubject: ${subject}\n\nBody:\n${body}`,
+      },
+    ],
+  });
+
+  const result = response.parsed_output;
+  if (!result) return;
+
+  await prisma.ticket.update({
+    where: { id: ticketId },
+    data: { category: result.category, priority: result.priority },
   });
 }

@@ -31,7 +31,7 @@
 
 ## Phase 5 — Ticket Dashboard
 
-- [ ] Build ticket list page (`/tickets`) with columns: subject, status, sender, date
+- [x] Build ticket list page (`/tickets`) with columns: subject, status, sender, date
 - [ ] Add filtering by status (Open / Resolved / Closed)
 - [ ] Add sorting by date and status
 - [ ] Build ticket detail page (`/tickets/[id]`) showing full message thread
@@ -40,8 +40,8 @@
 
 ## Phase 6 — AI Features
 
-- [ ] Integrate Anthropic Claude API client
-- [ ] Auto-classify ticket on creation (category + priority) using Claude
+- [x] Integrate Anthropic Claude API client
+- [x] Auto-classify ticket on creation (category + priority) using Claude
 - [ ] Generate AI summary on ticket detail page
 - [ ] Build knowledge base ingestion script (chunk docs → embed → store in pgvector)
 - [ ] Build RAG retrieval helper (embed query → similarity search → fetch chunks)

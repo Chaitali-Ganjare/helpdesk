@@ -42,6 +42,12 @@ export default function NavBar() {
           </div>
           Helpdesk
         </Link>
+        <Link
+          to="/tickets"
+          className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors"
+        >
+          Tickets
+        </Link>
         {isAdmin && (
           <Link
             to="/users"
