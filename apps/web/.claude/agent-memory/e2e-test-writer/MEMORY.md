@@ -1,0 +1,3 @@
+- [Sign-in rate limit budget is shared across all spec files](feedback_sign_in_rate_limit.md) — count loginViaUI calls project-wide, not per-file
+- [Always validate against the full e2e suite](feedback_validate_full_suite.md) — a single-file pass doesn't prove the full run is clean
+- [/users page CRUD locator reference](project_users_page_crud.md) — dialog/table markup facts for UsersTable, UserFormDialog, DeleteUserDialog
