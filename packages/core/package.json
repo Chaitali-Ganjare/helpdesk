@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./schemas/users": "./src/schemas/users.ts"
+    "./schemas/users": "./src/schemas/users.ts",
+    "./enums/role": "./src/enums/role.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Role } from "@helpdesk/core/enums/role";
 import { authClient } from "./lib/auth-client";
 import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
@@ -18,8 +19,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
   if (isPending) return null;
   if (!session) return <Navigate to="/login" replace />;
-  const role = (session.user as { role?: string }).role;
-  if (role !== "ADMIN") return <Navigate to="/" replace />;
+  const role = (session.user as { role?: Role }).role;
+  if (role !== Role.ADMIN) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 

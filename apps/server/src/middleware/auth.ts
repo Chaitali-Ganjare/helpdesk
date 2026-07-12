@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
+import { Role } from "../generated/prisma";
 
 // Augment the Express Request type so downstream handlers get full type safety.
 declare global {
@@ -51,8 +52,8 @@ export async function requireAdmin(
     return;
   }
 
-  const role = (session.user as { role?: string }).role;
-  if (role !== "ADMIN") {
+  const role = (session.user as { role?: Role }).role;
+  if (role !== Role.ADMIN) {
     res.status(403).json({ error: "Forbidden" });
     return;
   }

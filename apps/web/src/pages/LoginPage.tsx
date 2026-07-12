@@ -38,9 +38,17 @@ export default function LoginPage() {
   async function onSubmit(data: FormData) {
     const { error } = await authClient.signIn.email(data);
     if (error) {
-      // Use a fixed message regardless of the server's error detail to prevent
-      // user enumeration (distinguishing "email not found" from "wrong password").
-      setError("root", { message: "Invalid email or password" });
+      if (error.status === 429) {
+        // Rate-limited by the sign-in brute-force guard — this is not a
+        // credentials problem, so say so rather than implying a wrong password.
+        setError("root", {
+          message: "Too many sign-in attempts. Please wait a few minutes and try again.",
+        });
+      } else {
+        // Use a fixed message regardless of the server's error detail to prevent
+        // user enumeration (distinguishing "email not found" from "wrong password").
+        setError("root", { message: "Invalid email or password" });
+      }
     } else {
       navigate("/");
     }

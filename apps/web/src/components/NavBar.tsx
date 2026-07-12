@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Role } from "@helpdesk/core/enums/role";
 import { authClient } from "../lib/auth-client";
 
 export default function NavBar() {
   const { data: session } = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const userName = session?.user.name ?? "";
-  const isAdmin = (session?.user as { role?: string })?.role === "ADMIN";
+  const isAdmin = (session?.user as { role?: Role })?.role === Role.ADMIN;
 
   const initials = userName
     .split(" ")

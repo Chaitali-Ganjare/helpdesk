@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createUserSchema, type CreateUserInput } from "@helpdesk/core/schemas/users";
+import {
+  createUserSchema,
+  editUserSchema,
+  type CreateUserInput,
+} from "@helpdesk/core/schemas/users";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -14,9 +18,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { User } from "./UsersTable";
 
-export default function CreateUserModal() {
-  const [open, setOpen] = useState(false);
+type UserFormDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Present → edit that user. Absent → create a new user. */
+  user?: User;
+};
+
+type FormValues = CreateUserInput;
+
+export default function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps) {
+  const isEdit = !!user;
   const queryClient = useQueryClient();
 
   const {
@@ -24,23 +38,29 @@ export default function CreateUserModal() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateUserInput>({
-    resolver: zodResolver(createUserSchema),
+  } = useForm<FormValues>({
+    resolver: zodResolver(isEdit ? editUserSchema : createUserSchema),
+    defaultValues: { name: "", email: "", password: "" },
   });
 
+  useEffect(() => {
+    if (open) {
+      reset({ name: user?.name ?? "", email: user?.email ?? "", password: "" });
+    }
+  }, [open, user, reset]);
+
   const mutation = useMutation({
-    mutationFn: (data: CreateUserInput) => axios.post("/api/users", data),
+    mutationFn: (data: FormValues) =>
+      isEdit ? axios.patch(`/api/users/${user.id}`, data) : axios.post("/api/users", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      reset();
-      setOpen(false);
+      onOpenChange(false);
     },
   });
 
   function handleOpenChange(next: boolean) {
-    setOpen(next);
+    onOpenChange(next);
     if (!next) {
-      reset();
       mutation.reset();
     }
   }
@@ -51,10 +71,9 @@ export default function CreateUserModal() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <Button onClick={() => setOpen(true)}>New user</Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create user</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit user" : "Create user"}</DialogTitle>
         </DialogHeader>
 
         <form
@@ -65,7 +84,12 @@ export default function CreateUserModal() {
         >
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" autoComplete="off" {...register("name")} />
+            <Input
+              id="name"
+              autoComplete="off"
+              aria-invalid={!!errors.name}
+              {...register("name")}
+            />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
@@ -73,7 +97,13 @@ export default function CreateUserModal() {
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="off" {...register("email")} />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="off"
+              aria-invalid={!!errors.email}
+              {...register("email")}
+            />
             {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
@@ -85,6 +115,8 @@ export default function CreateUserModal() {
               id="password"
               type="password"
               autoComplete="new-password"
+              placeholder={isEdit ? "Leave blank to keep current password" : undefined}
+              aria-invalid={!!errors.password}
               {...register("password")}
             />
             {errors.password && (
@@ -98,7 +130,7 @@ export default function CreateUserModal() {
 
           <DialogFooter>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Creating…" : "Create user"}
+              {mutation.isPending ? "Saving…" : isEdit ? "Save changes" : "Create user"}
             </Button>
           </DialogFooter>
         </form>
