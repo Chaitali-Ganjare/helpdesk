@@ -41,3 +41,13 @@ export const assignTicketSchema = z.object({
   assignedToId: z.string().min(1).nullable(),
 });
 export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
+
+export const updateTicketStatusSchema = z.object({
+  status: z.enum(Object.values(TicketStatus) as [TicketStatus, ...TicketStatus[]]),
+});
+export type UpdateTicketStatusInput = z.infer<typeof updateTicketStatusSchema>;
+
+export const updateTicketCategorySchema = z.object({
+  category: z.enum(Object.values(TicketCategory) as [TicketCategory, ...TicketCategory[]]),
+});
+export type UpdateTicketCategoryInput = z.infer<typeof updateTicketCategorySchema>;

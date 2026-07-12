@@ -1,18 +1,23 @@
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
 import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
 import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
 import {
   ticketListQuerySchema,
   assignTicketSchema,
+  updateTicketStatusSchema,
+  updateTicketCategorySchema,
   type TicketListQuery,
   type AssignTicketInput,
+  type UpdateTicketStatusInput,
+  type UpdateTicketCategoryInput,
 } from "@helpdesk/core/schemas/tickets";
 import { prisma } from "../lib/prisma";
 import { anthropic } from "../lib/anthropic";
 
-export { ticketListQuerySchema, assignTicketSchema };
-export type { TicketListQuery, AssignTicketInput };
+export { ticketListQuerySchema, assignTicketSchema, updateTicketStatusSchema, updateTicketCategorySchema };
+export type { TicketListQuery, AssignTicketInput, UpdateTicketStatusInput, UpdateTicketCategoryInput };
 
 // Mirrors the fields we consume from Postmark's inbound webhook payload —
 // https://postmarkapp.com/developer/webhooks/inbound-webhook
@@ -113,6 +118,22 @@ export function assignTicket(id: string, assignedToId: string | null) {
   return prisma.ticket.update({
     where: { id },
     data: { assignedToId },
+    select: { ...ticketListFields, ...assignedToField, body: true, updatedAt: true },
+  });
+}
+
+export function updateTicketStatus(id: string, status: TicketStatus) {
+  return prisma.ticket.update({
+    where: { id },
+    data: { status },
+    select: { ...ticketListFields, ...assignedToField, body: true, updatedAt: true },
+  });
+}
+
+export function updateTicketCategory(id: string, category: TicketCategory) {
+  return prisma.ticket.update({
+    where: { id },
+    data: { category },
     select: { ...ticketListFields, ...assignedToField, body: true, updatedAt: true },
   });
 }

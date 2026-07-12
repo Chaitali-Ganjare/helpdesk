@@ -4,8 +4,12 @@ import {
   listTickets,
   getTicketById,
   assignTicket,
+  updateTicketStatus,
+  updateTicketCategory,
   ticketListQuerySchema,
   assignTicketSchema,
+  updateTicketStatusSchema,
+  updateTicketCategorySchema,
 } from "../services/tickets";
 import { getUserById } from "../services/users";
 import { parseQuery, parseBody } from "../lib/validate";
@@ -51,6 +55,42 @@ router.patch(
     }
 
     const updated = await assignTicket(req.params.id, data.assignedToId);
+    res.json(updated);
+  }
+);
+
+router.patch(
+  "/:id/status",
+  requireAuth,
+  async (req: Request<{ id: string }>, res: Response) => {
+    const data = parseBody(updateTicketStatusSchema, req.body, res);
+    if (!data) return;
+
+    const ticket = await getTicketById(req.params.id);
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const updated = await updateTicketStatus(req.params.id, data.status);
+    res.json(updated);
+  }
+);
+
+router.patch(
+  "/:id/category",
+  requireAuth,
+  async (req: Request<{ id: string }>, res: Response) => {
+    const data = parseBody(updateTicketCategorySchema, req.body, res);
+    if (!data) return;
+
+    const ticket = await getTicketById(req.params.id);
+    if (!ticket) {
+      res.status(404).json({ error: "Ticket not found" });
+      return;
+    }
+
+    const updated = await updateTicketCategory(req.params.id, data.category);
     res.json(updated);
   }
 );

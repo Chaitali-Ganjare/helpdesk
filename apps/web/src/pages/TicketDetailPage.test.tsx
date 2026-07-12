@@ -69,8 +69,8 @@ describe("TicketDetailPage", () => {
     expect(axios.get).toHaveBeenCalledWith("/api/tickets/1");
     expect(screen.getByText("I keep getting an invalid password error.")).toBeInTheDocument();
     expect(screen.getByText("Jane Doe (jane@example.com)")).toBeInTheDocument();
-    expect(screen.getByText(TicketStatus.OPEN)).toBeInTheDocument();
-    expect(screen.getByText(TicketCategory.ACCOUNT)).toBeInTheDocument();
+    expect(screen.getByLabelText(/status/i)).toHaveValue(TicketStatus.OPEN);
+    expect(screen.getByLabelText(/category/i)).toHaveValue(TicketCategory.ACCOUNT);
     expect(screen.getByText(TicketPriority.HIGH)).toBeInTheDocument();
   });
 
@@ -80,6 +80,89 @@ describe("TicketDetailPage", () => {
     renderDetailPage("missing");
 
     expect(await screen.findByText(/couldn't load this ticket/i)).toBeInTheDocument();
+  });
+
+  it("shows 'Not yet classified' when the ticket has no category", async () => {
+    mockGetResponses({ ...baseTicket, category: null });
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    expect(screen.getByLabelText(/category/i)).toHaveValue("");
+  });
+
+  it("PATCHes the ticket when a new status is chosen", async () => {
+    mockGetResponses(baseTicket);
+    vi.mocked(axios.patch).mockResolvedValue({
+      data: { ...baseTicket, status: TicketStatus.RESOLVED },
+    });
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    fireEvent.change(screen.getByLabelText(/status/i), {
+      target: { value: TicketStatus.RESOLVED },
+    });
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith("/api/tickets/1/status", {
+        status: TicketStatus.RESOLVED,
+      })
+    );
+  });
+
+  it("shows the server's error message when a status update fails", async () => {
+    mockGetResponses(baseTicket);
+    vi.mocked(axios.patch).mockRejectedValue({
+      response: { data: { error: "Ticket not found" } },
+    });
+    vi.mocked(axios.isAxiosError).mockImplementation((error) => Boolean(error));
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    fireEvent.change(screen.getByLabelText(/status/i), {
+      target: { value: TicketStatus.CLOSED },
+    });
+
+    expect(await screen.findByText(/ticket not found/i)).toBeInTheDocument();
+  });
+
+  it("PATCHes the ticket when a new category is chosen", async () => {
+    mockGetResponses(baseTicket);
+    vi.mocked(axios.patch).mockResolvedValue({
+      data: { ...baseTicket, category: TicketCategory.BILLING },
+    });
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    fireEvent.change(screen.getByLabelText(/category/i), {
+      target: { value: TicketCategory.BILLING },
+    });
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith("/api/tickets/1/category", {
+        category: TicketCategory.BILLING,
+      })
+    );
+  });
+
+  it("shows the server's error message when a category update fails", async () => {
+    mockGetResponses(baseTicket);
+    vi.mocked(axios.patch).mockRejectedValue({
+      response: { data: { error: "Ticket not found" } },
+    });
+    vi.mocked(axios.isAxiosError).mockImplementation((error) => Boolean(error));
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    fireEvent.change(screen.getByLabelText(/category/i), {
+      target: { value: TicketCategory.TECHNICAL },
+    });
+
+    expect(await screen.findByText(/ticket not found/i)).toBeInTheDocument();
   });
 
   it("shows 'Unassigned' by default and lists assignable users", async () => {
