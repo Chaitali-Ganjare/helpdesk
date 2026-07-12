@@ -1,7 +1,8 @@
-// Mirrors the `TicketStatus` enum in apps/server/prisma/schema.prisma. Keep
-// both the type and the const object in sync with that schema if it ever
-// changes — the union type is declared directly rather than derived from the
-// const, so the two must be updated together.
+// Canonical source of truth for ticket status values. Ticket.status in
+// apps/server/prisma/schema.prisma is a plain String column (not a DB-native
+// enum) validated against this at the application layer — see
+// ticketListQuerySchema in ./schemas/tickets.ts — so this is the only place
+// the value list is defined.
 export type TicketStatus = "OPEN" | "RESOLVED" | "CLOSED";
 
 export const TicketStatus = {

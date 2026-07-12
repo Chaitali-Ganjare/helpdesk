@@ -67,17 +67,25 @@ model Verification {
 // ─── Helpdesk models ──────────────────────────────────────────────
 
 model Ticket {
-  id        String          @id @default(cuid())
+  id        String   @id @default(cuid())
   subject   String
   body      String
   fromEmail String
   fromName  String?
-  status    TicketStatus    @default(OPEN)
-  category  TicketCategory?
-  priority  TicketPriority?
-  messageId String?         @unique
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  // Not a DB-native enum — the frontend can't import Prisma's generated
+  // types, so the canonical value lists live once in
+  // packages/core/src/enums/ticket-status.ts, validated at the application
+  // layer (zod) on every write instead of by MySQL.
+  status    String   @default("OPEN")
+  // AI-classified on creation (see services/tickets.ts's classifyTicket) —
+  // nullable because classification happens asynchronously, after the
+  // ticket row already exists. Canonical values: ticket-category.ts.
+  category  String?
+  // Canonical values: packages/core/src/enums/ticket-priority.ts.
+  priority  String?
+  messageId String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─── Enums ────────────────────────────────────────────────────────
@@ -85,27 +93,4 @@ model Ticket {
 enum Role {
   ADMIN
   AGENT
-}
-
-enum TicketStatus {
-  OPEN
-  RESOLVED
-  CLOSED
-}
-
-// AI-classified on creation (see services/tickets.ts's classifyTicket) —
-// nullable because classification happens asynchronously, after the ticket
-// row already exists.
-enum TicketCategory {
-  TECHNICAL
-  BILLING
-  ACCOUNT
-  GENERAL
-}
-
-enum TicketPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
 }

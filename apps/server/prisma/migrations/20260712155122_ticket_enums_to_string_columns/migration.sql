@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `Ticket` MODIFY `status` VARCHAR(191) NOT NULL DEFAULT 'OPEN',
+    MODIFY `category` VARCHAR(191) NULL,
+    MODIFY `priority` VARCHAR(191) NULL;

@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { TicketStatus } from "../enums/ticket-status";
+import { TicketCategory } from "../enums/ticket-category";
+import { TicketPriority } from "../enums/ticket-priority";
 
 // Sortable columns for GET /api/tickets — must stay a subset of
 // ticketListFields in apps/server/src/services/tickets.ts.
@@ -20,5 +23,14 @@ export type TicketSortOrder = z.infer<typeof ticketSortOrderSchema>;
 export const ticketListQuerySchema = z.object({
   sort: ticketSortFieldSchema.optional().default("createdAt"),
   order: ticketSortOrderSchema.optional().default("desc"),
+  status: z.enum(Object.values(TicketStatus) as [TicketStatus, ...TicketStatus[]]).optional(),
+  category: z
+    .enum(Object.values(TicketCategory) as [TicketCategory, ...TicketCategory[]])
+    .optional(),
+  priority: z
+    .enum(Object.values(TicketPriority) as [TicketPriority, ...TicketPriority[]])
+    .optional(),
+  // Free-text search — matched against subject/fromEmail/fromName.
+  search: z.string().trim().min(1).optional(),
 });
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;

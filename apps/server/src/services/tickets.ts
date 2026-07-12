@@ -45,9 +45,21 @@ const ticketListFields = {
   createdAt: true,
 } as const;
 
-export function listTickets({ sort, order }: TicketListQuery) {
+export function listTickets({ sort, order, status, category, priority, search }: TicketListQuery) {
   return prisma.ticket.findMany({
     select: ticketListFields,
+    where: {
+      status,
+      category,
+      priority,
+      OR: search
+        ? [
+            { subject: { contains: search } },
+            { fromEmail: { contains: search } },
+            { fromName: { contains: search } },
+          ]
+        : undefined,
+    },
     // MySQL sorts NULLs first in ascending order for nullable columns
     // (category, priority) — Prisma's `nulls` option isn't available on
     // the MySQL connector, so this is inherent, not a bug.

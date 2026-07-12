@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
 import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
@@ -55,8 +55,9 @@ describe("TicketsPage", () => {
     expect(screen.getByText("Newest Sender")).toBeInTheDocument();
     expect(screen.getByText("newest@example.com")).toBeInTheDocument();
     expect(screen.getByText("oldest@example.com")).toBeInTheDocument();
-    expect(screen.getByText(TicketStatus.OPEN)).toBeInTheDocument();
-    expect(screen.getByText(TicketStatus.CLOSED)).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    expect(within(table).getByText(TicketStatus.OPEN)).toBeInTheDocument();
+    expect(within(table).getByText(TicketStatus.CLOSED)).toBeInTheDocument();
 
     const subjects = screen.getAllByRole("row").map((row) => row.textContent);
     const newestIndex = subjects.findIndex((text) => text?.includes("Newest ticket"));
@@ -125,5 +126,65 @@ describe("TicketsPage", () => {
     );
 
     expect(await screen.findByText("No tickets yet.")).toBeInTheDocument();
+  });
+
+  it("re-fetches with a status filter param when the status filter changes", async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+
+    renderWithQuery(
+      <MemoryRouter>
+        <TicketsPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getByRole("combobox", { name: /filter by status/i }), {
+      target: { value: TicketStatus.RESOLVED },
+    });
+
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { sort: "createdAt", order: "desc", status: TicketStatus.RESOLVED },
+      })
+    );
+  });
+
+  it("re-fetches with a search param after debounce when typing in the search box", async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+
+    renderWithQuery(
+      <MemoryRouter>
+        <TicketsPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getByRole("searchbox", { name: /search tickets/i }), {
+      target: { value: "crashing" },
+    });
+
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { sort: "createdAt", order: "desc", search: "crashing" },
+      })
+    );
+  });
+
+  it("shows a filtered empty state when filters are active and no tickets match", async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+
+    renderWithQuery(
+      <MemoryRouter>
+        <TicketsPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: /filter by status/i }), {
+      target: { value: TicketStatus.RESOLVED },
+    });
+
+    expect(await screen.findByText("No tickets match the selected filters.")).toBeInTheDocument();
   });
 });

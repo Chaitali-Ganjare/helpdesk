@@ -125,10 +125,12 @@ export default function TicketsTable({
   tickets,
   sorting,
   onSortingChange,
+  hasActiveFilters = false,
 }: {
   tickets: Ticket[] | undefined;
   sorting: SortingState;
   onSortingChange: OnChangeFn<SortingState>;
+  hasActiveFilters?: boolean;
 }) {
   const table = useReactTable({
     data: tickets ?? [],
@@ -210,7 +212,9 @@ export default function TicketsTable({
       </table>
 
       {tickets?.length === 0 && (
-        <p className="px-4 py-6 text-center text-sm text-slate-500">No tickets yet.</p>
+        <p className="px-4 py-6 text-center text-sm text-slate-500">
+          {hasActiveFilters ? "No tickets match the selected filters." : "No tickets yet."}
+        </p>
       )}
     </div>
   );
