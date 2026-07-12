@@ -4,3 +4,4 @@
 - [migration-schema-drift-fixed](migration_schema_drift_fixed.md) — the one committed Prisma migration was stale (old NextAuth shape); fixed 2026-07-11, watch for recurrence after future schema.prisma edits.
 - [better-auth-crypto-esm-only](better_auth_crypto_esm_only.md) — never import better-auth subpaths (e.g. /crypto) directly in apps/e2e files; shell out to a Bun script instead.
 - [dev-server-port-conflict](dev_server_port_conflict.md) — e2e's :3000 webServer never reuses an existing server; stop the user's dev server first, restart it after the run.
+- [api-only-endpoint-testing-pattern](api_only_endpoint_testing_pattern.md) — for webhooks/server-to-server routes, use `request` fixture + absolute :3000 URL + manual Basic Auth header, not `page`.
