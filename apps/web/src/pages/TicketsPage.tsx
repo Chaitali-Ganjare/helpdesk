@@ -9,6 +9,12 @@ import NavBar from "../components/NavBar";
 import TicketsTable, { type Ticket } from "../components/TicketsTable";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+type TicketsResponse = {
+  tickets: Ticket[];
+  pagination: { page: number; pageSize: number; total: number; totalPages: number };
+};
 
 export default function TicketsPage() {
   const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
@@ -28,8 +34,18 @@ export default function TicketsPage() {
 
   const hasActiveFilters = status !== "" || category !== "" || priority !== "" || search !== "";
 
-  const { data: tickets, isError: error } = useQuery({
-    queryKey: ["tickets", { sort: sortField, order: sortOrder, status, category, priority, search }],
+  const [page, setPage] = useState(1);
+  // Any change to sort/filter/search invalidates the current page — reset
+  // to page 1 so the user isn't left staring at an empty "page 3 of 1".
+  useEffect(() => {
+    setPage(1);
+  }, [sortField, sortOrder, status, category, priority, search]);
+
+  const { data, isError: error } = useQuery({
+    queryKey: [
+      "tickets",
+      { sort: sortField, order: sortOrder, status, category, priority, search, page },
+    ],
     queryFn: async () => {
       const res = await axios.get("/api/tickets", {
         params: {
@@ -39,11 +55,15 @@ export default function TicketsPage() {
           ...(category && { category }),
           ...(priority && { priority }),
           ...(search && { search }),
+          page,
         },
       });
-      return res.data.tickets as Ticket[];
+      return res.data as TicketsResponse;
     },
   });
+
+  const tickets = data?.tickets;
+  const pagination = data?.pagination;
 
   return (
     <>
@@ -121,6 +141,32 @@ export default function TicketsPage() {
             onSortingChange={setSorting}
             hasActiveFilters={hasActiveFilters}
           />
+        )}
+
+        {!error && pagination && pagination.total > 0 && (
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-slate-500">
+              Page {pagination.page} of {pagination.totalPages}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         )}
       </main>
     </>

@@ -9,8 +9,8 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
   const query = parseQuery(ticketListQuerySchema, req.query, res);
   if (!query) return;
 
-  const tickets = await listTickets(query);
-  res.json({ tickets });
+  const result = await listTickets(query);
+  res.json(result);
 });
 
 export default router;

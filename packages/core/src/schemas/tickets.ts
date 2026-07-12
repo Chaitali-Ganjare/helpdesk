@@ -32,5 +32,6 @@ export const ticketListQuerySchema = z.object({
     .optional(),
   // Free-text search — matched against subject/fromEmail/fromName.
   search: z.string().trim().min(1).optional(),
+  page: z.coerce.number().int().positive().optional().default(1),
 });
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;

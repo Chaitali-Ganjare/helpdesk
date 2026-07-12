@@ -45,30 +45,61 @@ const ticketListFields = {
   createdAt: true,
 } as const;
 
-export function listTickets({ sort, order, status, category, priority, search }: TicketListQuery) {
-  return prisma.ticket.findMany({
-    select: ticketListFields,
-    where: {
-      status,
-      category,
-      priority,
-      OR: search
-        ? [
-            { subject: { contains: search } },
-            { fromEmail: { contains: search } },
-            { fromName: { contains: search } },
-          ]
-        : undefined,
+const TICKET_PAGE_SIZE = 20;
+
+function buildTicketWhere({ status, category, priority, search }: TicketListQuery) {
+  return {
+    status,
+    category,
+    priority,
+    OR: search
+      ? [
+          { subject: { contains: search } },
+          { fromEmail: { contains: search } },
+          { fromName: { contains: search } },
+        ]
+      : undefined,
+  };
+}
+
+export async function listTickets(query: TicketListQuery) {
+  const { sort, order, page } = query;
+  const where = buildTicketWhere(query);
+
+  const [tickets, total] = await Promise.all([
+    prisma.ticket.findMany({
+      select: ticketListFields,
+      where,
+      // MySQL sorts NULLs first in ascending order for nullable columns
+      // (category, priority) — Prisma's `nulls` option isn't available on
+      // the MySQL connector, so this is inherent, not a bug.
+      orderBy: { [sort]: order },
+      skip: (page - 1) * TICKET_PAGE_SIZE,
+      take: TICKET_PAGE_SIZE,
+    }),
+    prisma.ticket.count({ where }),
+  ]);
+
+  return {
+    tickets,
+    pagination: {
+      page,
+      pageSize: TICKET_PAGE_SIZE,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / TICKET_PAGE_SIZE)),
     },
-    // MySQL sorts NULLs first in ascending order for nullable columns
-    // (category, priority) — Prisma's `nulls` option isn't available on
-    // the MySQL connector, so this is inherent, not a bug.
-    orderBy: { [sort]: order },
-  });
+  };
 }
 
 export function findTicketByMessageId(messageId: string) {
   return prisma.ticket.findUnique({ where: { messageId } });
+}
+
+export function getTicketById(id: string) {
+  return prisma.ticket.findUnique({
+    where: { id },
+    select: { ...ticketListFields, body: true, updatedAt: true },
+  });
 }
 
 export function createTicketFromEmail(payload: PostmarkInboundPayload) {

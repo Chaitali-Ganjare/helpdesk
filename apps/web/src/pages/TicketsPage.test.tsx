@@ -19,30 +19,48 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+// Builds a GET /api/tickets response payload, defaulting pagination to a
+// single, full page so most tests don't need to think about it.
+function ticketsResponse(
+  tickets: unknown[],
+  pagination?: Partial<{ page: number; pageSize: number; total: number; totalPages: number }>
+) {
+  return {
+    data: {
+      tickets,
+      pagination: {
+        page: 1,
+        pageSize: 20,
+        total: tickets.length,
+        totalPages: 1,
+        ...pagination,
+      },
+    },
+  };
+}
+
 describe("TicketsPage", () => {
   it("renders the fetched tickets in newest-first order as returned by the API", async () => {
-    vi.mocked(axios.get).mockResolvedValue({
-      data: {
-        tickets: [
-          {
-            id: "2",
-            subject: "Newest ticket",
-            fromEmail: "newest@example.com",
-            fromName: "Newest Sender",
-            status: TicketStatus.OPEN,
-            createdAt: "2026-01-02T00:00:00.000Z",
-          },
-          {
-            id: "1",
-            subject: "Oldest ticket",
-            fromEmail: "oldest@example.com",
-            fromName: null,
-            status: TicketStatus.CLOSED,
-            createdAt: "2026-01-01T00:00:00.000Z",
-          },
-        ],
-      },
-    });
+    vi.mocked(axios.get).mockResolvedValue(
+      ticketsResponse([
+        {
+          id: "2",
+          subject: "Newest ticket",
+          fromEmail: "newest@example.com",
+          fromName: "Newest Sender",
+          status: TicketStatus.OPEN,
+          createdAt: "2026-01-02T00:00:00.000Z",
+        },
+        {
+          id: "1",
+          subject: "Oldest ticket",
+          fromEmail: "oldest@example.com",
+          fromName: null,
+          status: TicketStatus.CLOSED,
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ])
+    );
 
     renderWithQuery(
       <MemoryRouter>
@@ -66,8 +84,8 @@ describe("TicketsPage", () => {
     expect(newestIndex).toBeLessThan(oldestIndex);
   });
 
-  it("sends the default sort params on initial load", async () => {
-    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+  it("sends the default sort and page params on initial load", async () => {
+    vi.mocked(axios.get).mockResolvedValue(ticketsResponse([]));
 
     renderWithQuery(
       <MemoryRouter>
@@ -77,13 +95,13 @@ describe("TicketsPage", () => {
 
     await waitFor(() =>
       expect(axios.get).toHaveBeenCalledWith("/api/tickets", {
-        params: { sort: "createdAt", order: "desc" },
+        params: { sort: "createdAt", order: "desc", page: 1 },
       })
     );
   });
 
   it("re-fetches with new sort params when a sortable column header is clicked", async () => {
-    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+    vi.mocked(axios.get).mockResolvedValue(ticketsResponse([]));
 
     renderWithQuery(
       <MemoryRouter>
@@ -97,7 +115,7 @@ describe("TicketsPage", () => {
 
     await waitFor(() =>
       expect(axios.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sort: "subject", order: "asc" },
+        params: { sort: "subject", order: "asc", page: 1 },
       })
     );
   });
@@ -117,7 +135,7 @@ describe("TicketsPage", () => {
   });
 
   it("shows an empty state when there are no tickets", async () => {
-    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+    vi.mocked(axios.get).mockResolvedValue(ticketsResponse([]));
 
     renderWithQuery(
       <MemoryRouter>
@@ -129,7 +147,7 @@ describe("TicketsPage", () => {
   });
 
   it("re-fetches with a status filter param when the status filter changes", async () => {
-    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+    vi.mocked(axios.get).mockResolvedValue(ticketsResponse([]));
 
     renderWithQuery(
       <MemoryRouter>
@@ -145,13 +163,13 @@ describe("TicketsPage", () => {
 
     await waitFor(() =>
       expect(axios.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sort: "createdAt", order: "desc", status: TicketStatus.RESOLVED },
+        params: { sort: "createdAt", order: "desc", status: TicketStatus.RESOLVED, page: 1 },
       })
     );
   });
 
   it("re-fetches with a search param after debounce when typing in the search box", async () => {
-    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+    vi.mocked(axios.get).mockResolvedValue(ticketsResponse([]));
 
     renderWithQuery(
       <MemoryRouter>
@@ -167,13 +185,13 @@ describe("TicketsPage", () => {
 
     await waitFor(() =>
       expect(axios.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sort: "createdAt", order: "desc", search: "crashing" },
+        params: { sort: "createdAt", order: "desc", search: "crashing", page: 1 },
       })
     );
   });
 
   it("shows a filtered empty state when filters are active and no tickets match", async () => {
-    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+    vi.mocked(axios.get).mockResolvedValue(ticketsResponse([]));
 
     renderWithQuery(
       <MemoryRouter>
@@ -186,5 +204,81 @@ describe("TicketsPage", () => {
     });
 
     expect(await screen.findByText("No tickets match the selected filters.")).toBeInTheDocument();
+  });
+
+  it("shows the page count and disables Previous on the first page", async () => {
+    vi.mocked(axios.get).mockResolvedValue(
+      ticketsResponse([{ id: "1", subject: "A ticket", fromEmail: "a@example.com", fromName: null, status: TicketStatus.OPEN, createdAt: "2026-01-01T00:00:00.000Z" }], {
+        page: 1,
+        total: 25,
+        totalPages: 2,
+      })
+    );
+
+    renderWithQuery(
+      <MemoryRouter>
+        <TicketsPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText("Page 1 of 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
+  });
+
+  it("requests the next page when Next is clicked", async () => {
+    vi.mocked(axios.get).mockResolvedValue(
+      ticketsResponse([{ id: "1", subject: "A ticket", fromEmail: "a@example.com", fromName: null, status: TicketStatus.OPEN, createdAt: "2026-01-01T00:00:00.000Z" }], {
+        page: 1,
+        total: 25,
+        totalPages: 2,
+      })
+    );
+
+    renderWithQuery(
+      <MemoryRouter>
+        <TicketsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText("Page 1 of 2");
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { sort: "createdAt", order: "desc", page: 2 },
+      })
+    );
+  });
+
+  it("resets to page 1 when a filter changes after paging forward", async () => {
+    vi.mocked(axios.get).mockResolvedValue(
+      ticketsResponse([{ id: "1", subject: "A ticket", fromEmail: "a@example.com", fromName: null, status: TicketStatus.OPEN, createdAt: "2026-01-01T00:00:00.000Z" }], {
+        page: 1,
+        total: 25,
+        totalPages: 2,
+      })
+    );
+
+    renderWithQuery(
+      <MemoryRouter>
+        <TicketsPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText("Page 1 of 2");
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(2));
+
+    fireEvent.change(screen.getByRole("combobox", { name: /filter by status/i }), {
+      target: { value: TicketStatus.RESOLVED },
+    });
+
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { sort: "createdAt", order: "desc", status: TicketStatus.RESOLVED, page: 1 },
+      })
+    );
   });
 });
