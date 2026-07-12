@@ -35,3 +35,9 @@ export const ticketListQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
 });
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;
+
+// `assignedToId: null` unassigns the ticket.
+export const assignTicketSchema = z.object({
+  assignedToId: z.string().min(1).nullable(),
+});
+export type AssignTicketInput = z.infer<typeof assignTicketSchema>;

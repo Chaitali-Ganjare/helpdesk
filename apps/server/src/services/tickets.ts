@@ -2,12 +2,17 @@ import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
 import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
-import { ticketListQuerySchema, type TicketListQuery } from "@helpdesk/core/schemas/tickets";
+import {
+  ticketListQuerySchema,
+  assignTicketSchema,
+  type TicketListQuery,
+  type AssignTicketInput,
+} from "@helpdesk/core/schemas/tickets";
 import { prisma } from "../lib/prisma";
 import { anthropic } from "../lib/anthropic";
 
-export { ticketListQuerySchema };
-export type { TicketListQuery };
+export { ticketListQuerySchema, assignTicketSchema };
+export type { TicketListQuery, AssignTicketInput };
 
 // Mirrors the fields we consume from Postmark's inbound webhook payload —
 // https://postmarkapp.com/developer/webhooks/inbound-webhook
@@ -95,10 +100,20 @@ export function findTicketByMessageId(messageId: string) {
   return prisma.ticket.findUnique({ where: { messageId } });
 }
 
+const assignedToField = { assignedTo: { select: { id: true, name: true } } } as const;
+
 export function getTicketById(id: string) {
   return prisma.ticket.findUnique({
     where: { id },
-    select: { ...ticketListFields, body: true, updatedAt: true },
+    select: { ...ticketListFields, ...assignedToField, body: true, updatedAt: true },
+  });
+}
+
+export function assignTicket(id: string, assignedToId: string | null) {
+  return prisma.ticket.update({
+    where: { id },
+    data: { assignedToId },
+    select: { ...ticketListFields, ...assignedToField, body: true, updatedAt: true },
   });
 }
 

@@ -180,6 +180,7 @@ exports.Prisma.TicketScalarFieldEnum = {
   category: 'category',
   priority: 'priority',
   messageId: 'messageId',
+  assignedToId: 'assignedToId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

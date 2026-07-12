@@ -1,11 +1,12 @@
 import { Router, type Request, type Response } from "express";
-import { requireAdmin } from "../middleware/auth";
+import { requireAdmin, requireAuth } from "../middleware/auth";
 import { Role } from "../generated/prisma";
 import { parseBody } from "../lib/validate";
 import {
   createUserSchema,
   editUserSchema,
   listUsers,
+  listAssignableUsers,
   getUserById,
   emailExists,
   createUser,
@@ -17,6 +18,11 @@ const router = Router();
 
 router.get("/", requireAdmin, async (_req: Request, res: Response) => {
   const users = await listUsers();
+  res.json({ users });
+});
+
+router.get("/assignable", requireAuth, async (_req: Request, res: Response) => {
+  const users = await listAssignableUsers();
   res.json({ users });
 });
 

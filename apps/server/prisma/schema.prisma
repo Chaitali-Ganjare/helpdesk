@@ -22,6 +22,7 @@ model User {
   deletedAt     DateTime?
   sessions      Session[]
   accounts      Account[]
+  assignedTickets Ticket[]
 }
 
 model Session {
@@ -84,6 +85,9 @@ model Ticket {
   // Canonical values: packages/core/src/enums/ticket-priority.ts.
   priority  String?
   messageId String?  @unique
+  // Assigned agent/admin working the ticket — nullable, unassigned by default.
+  assignedToId String?
+  assignedTo   User?    @relation(fields: [assignedToId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

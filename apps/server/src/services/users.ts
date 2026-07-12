@@ -19,6 +19,17 @@ export function listUsers() {
   });
 }
 
+// Minimal user list for the ticket-assignment dropdown — open to any
+// authenticated user (unlike listUsers, which is admin-only), so it only
+// exposes id/name rather than the full admin-facing user record.
+export function listAssignableUsers() {
+  return prisma.user.findMany({
+    where: { deletedAt: null },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 // Soft-deleted users are treated as gone: not found for edit/delete purposes.
 export function getUserById(id: string) {
   return prisma.user.findFirst({ where: { id, deletedAt: null }, select: userListFields });
