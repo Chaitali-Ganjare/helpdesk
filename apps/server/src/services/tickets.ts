@@ -2,8 +2,12 @@ import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
 import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
+import { ticketListQuerySchema, type TicketListQuery } from "@helpdesk/core/schemas/tickets";
 import { prisma } from "../lib/prisma";
 import { anthropic } from "../lib/anthropic";
+
+export { ticketListQuerySchema };
+export type { TicketListQuery };
 
 // Mirrors the fields we consume from Postmark's inbound webhook payload —
 // https://postmarkapp.com/developer/webhooks/inbound-webhook
@@ -41,10 +45,13 @@ const ticketListFields = {
   createdAt: true,
 } as const;
 
-export function listTickets() {
+export function listTickets({ sort, order }: TicketListQuery) {
   return prisma.ticket.findMany({
     select: ticketListFields,
-    orderBy: { createdAt: "desc" },
+    // MySQL sorts NULLs first in ascending order for nullable columns
+    // (category, priority) — Prisma's `nulls` option isn't available on
+    // the MySQL connector, so this is inherent, not a bug.
+    orderBy: { [sort]: order },
   });
 }
 

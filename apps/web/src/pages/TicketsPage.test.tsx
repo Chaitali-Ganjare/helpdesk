@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
 import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
@@ -63,6 +63,42 @@ describe("TicketsPage", () => {
     const oldestIndex = subjects.findIndex((text) => text?.includes("Oldest ticket"));
     expect(newestIndex).toBeGreaterThanOrEqual(0);
     expect(newestIndex).toBeLessThan(oldestIndex);
+  });
+
+  it("sends the default sort params on initial load", async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+
+    renderWithQuery(
+      <MemoryRouter>
+        <TicketsPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith("/api/tickets", {
+        params: { sort: "createdAt", order: "desc" },
+      })
+    );
+  });
+
+  it("re-fetches with new sort params when a sortable column header is clicked", async () => {
+    vi.mocked(axios.get).mockResolvedValue({ data: { tickets: [] } });
+
+    renderWithQuery(
+      <MemoryRouter>
+        <TicketsPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(axios.get).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole("button", { name: /subject/i }));
+
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { sort: "subject", order: "asc" },
+      })
+    );
   });
 
   it("shows an error message when the request fails", async () => {
