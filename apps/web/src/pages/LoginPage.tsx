@@ -6,6 +6,7 @@ import { authClient } from "../lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldError } from "@/components/ui/field-error";
 import {
   Card,
   CardContent,
@@ -81,9 +82,7 @@ export default function LoginPage() {
                 aria-invalid={!!errors.email}
                 {...register("email")}
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
-              )}
+              <FieldError message={errors.email?.message} />
             </div>
 
             <div className="space-y-1.5">
@@ -95,9 +94,7 @@ export default function LoginPage() {
                 aria-invalid={!!errors.password}
                 {...register("password")}
               />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
+              <FieldError message={errors.password?.message} />
             </div>
 
             {errors.root && (

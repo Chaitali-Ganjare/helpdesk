@@ -7,23 +7,10 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown, ChevronUp } from "lucide-react";
-import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
-import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
-import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
+import type { Ticket } from "@helpdesk/core/types/tickets";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "@/components/ui/link";
 import { Badge, statusStyles, priorityStyles, categoryStyles } from "./TicketBadge";
-
-export type Ticket = {
-  id: string;
-  subject: string;
-  fromEmail: string;
-  fromName: string | null;
-  status: TicketStatus;
-  category: TicketCategory | null;
-  priority: TicketPriority | null;
-  createdAt: string;
-};
 
 const columnHelper = createColumnHelper<Ticket>();
 

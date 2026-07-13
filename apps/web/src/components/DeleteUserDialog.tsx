@@ -11,6 +11,8 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import type { User } from "./UsersTable";
+import { axiosErrorMessage } from "@/lib/axios-error";
+import { FieldError } from "@/components/ui/field-error";
 
 type DeleteUserDialogProps = {
   open: boolean;
@@ -36,9 +38,7 @@ export default function DeleteUserDialog({ open, onOpenChange, user }: DeleteUse
     }
   }
 
-  const serverError = axios.isAxiosError(mutation.error)
-    ? (mutation.error.response?.data as { error?: string } | undefined)?.error
-    : undefined;
+  const serverError = axiosErrorMessage(mutation.error);
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
@@ -51,9 +51,7 @@ export default function DeleteUserDialog({ open, onOpenChange, user }: DeleteUse
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        {serverError && (
-          <p className="text-sm text-destructive">{serverError}</p>
-        )}
+        <FieldError message={serverError} />
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={mutation.isPending}>Cancel</AlertDialogCancel>

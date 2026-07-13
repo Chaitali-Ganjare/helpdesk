@@ -5,32 +5,37 @@ import { ArrowLeft } from "lucide-react";
 import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
 import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
 import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
+import { ReplySenderType } from "@helpdesk/core/enums/reply-sender-type";
 import type {
   AssignTicketInput,
   UpdateTicketStatusInput,
   UpdateTicketCategoryInput,
 } from "@helpdesk/core/schemas/tickets";
+import type { Ticket } from "@helpdesk/core/types/tickets";
 import NavBar from "../components/NavBar";
-import { Badge, priorityStyles } from "../components/TicketBadge";
+import ReplyForm from "../components/ReplyForm";
+import { Badge, priorityStyles, senderTypeStyles } from "../components/TicketBadge";
+import { axiosErrorMessage } from "@/lib/axios-error";
 import { Link } from "@/components/ui/link";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-
-type TicketDetail = {
-  id: string;
-  subject: string;
-  body: string;
-  fromEmail: string;
-  fromName: string | null;
-  status: TicketStatus;
-  category: TicketCategory | null;
-  priority: TicketPriority | null;
-  assignedTo: { id: string; name: string } | null;
-  createdAt: string;
-  updatedAt: string;
-};
+import { FieldError } from "@/components/ui/field-error";
+import { ErrorMessage } from "@/components/ui/error-message";
 
 type AssignableUser = { id: string; name: string };
+
+type Reply = {
+  id: string;
+  body: string;
+  senderType: ReplySenderType;
+  createdAt: string;
+  author: { id: string; name: string };
+};
+
+const senderTypeLabels: Record<ReplySenderType, string> = {
+  AGENT: "Agent",
+  CUSTOMER: "Customer",
+};
 
 // Shared by the Status/Category/Assigned-to selects so they can never drift
 // apart in width — all three live in the same right-hand column.
@@ -57,7 +62,7 @@ export default function TicketDetailPage() {
     queryKey: ["ticket", id],
     queryFn: async () => {
       const res = await axios.get(`/api/tickets/${id}`);
-      return res.data as TicketDetail;
+      return res.data as Ticket;
     },
   });
 
@@ -66,6 +71,14 @@ export default function TicketDetailPage() {
     queryFn: async () => {
       const res = await axios.get("/api/users/assignable");
       return res.data.users as AssignableUser[];
+    },
+  });
+
+  const { data: replies } = useQuery({
+    queryKey: ["ticket", id, "replies"],
+    queryFn: async () => {
+      const res = await axios.get(`/api/tickets/${id}/replies`);
+      return res.data.replies as Reply[];
     },
   });
 
@@ -91,12 +104,6 @@ export default function TicketDetailPage() {
     },
   });
 
-  function axiosErrorMessage(error: unknown) {
-    return axios.isAxiosError(error)
-      ? (error.response?.data as { error?: string } | undefined)?.error
-      : undefined;
-  }
-
   const assignError = axiosErrorMessage(assignMutation.error);
   const statusError = axiosErrorMessage(statusMutation.error);
   const categoryError = axiosErrorMessage(categoryMutation.error);
@@ -110,11 +117,7 @@ export default function TicketDetailPage() {
           Back to tickets
         </Link>
 
-        {error && (
-          <p className="mt-4 text-sm text-destructive">
-            Couldn't load this ticket. It may not exist.
-          </p>
-        )}
+        <ErrorMessage show={error}>Couldn't load this ticket. It may not exist.</ErrorMessage>
 
         {!error && ticket === undefined && <p className="mt-4 text-sm text-slate-500">Loading…</p>}
 
@@ -161,6 +164,26 @@ export default function TicketDetailPage() {
                   </p>
                   <p className="mt-3 whitespace-pre-wrap text-sm text-slate-900">{ticket.body}</p>
                 </div>
+
+                <div className="mt-4 space-y-3">
+                  {replies?.map((reply) => (
+                    <div key={reply.id} className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900">{reply.author.name}</p>
+                        <Badge
+                          text={senderTypeLabels[reply.senderType]}
+                          className={senderTypeStyles[reply.senderType]}
+                        />
+                      </div>
+                      <p className="text-sm text-slate-500">
+                        {new Date(reply.createdAt).toLocaleString()}
+                      </p>
+                      <p className="mt-3 whitespace-pre-wrap text-sm text-slate-900">{reply.body}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <ReplyForm ticketId={ticket.id} />
               </div>
 
               <div className="space-y-4">
@@ -181,7 +204,7 @@ export default function TicketDetailPage() {
                       </option>
                     ))}
                   </Select>
-                  {statusError && <p className="text-sm text-destructive">{statusError}</p>}
+                  <FieldError message={statusError} />
                 </div>
 
                 <div className="space-y-1">
@@ -204,7 +227,7 @@ export default function TicketDetailPage() {
                       </option>
                     ))}
                   </Select>
-                  {categoryError && <p className="text-sm text-destructive">{categoryError}</p>}
+                  <FieldError message={categoryError} />
                 </div>
 
                 <div className="space-y-1">
@@ -225,7 +248,7 @@ export default function TicketDetailPage() {
                       </option>
                     ))}
                   </Select>
-                  {assignError && <p className="text-sm text-destructive">{assignError}</p>}
+                  <FieldError message={assignError} />
                 </div>
               </div>
             </div>

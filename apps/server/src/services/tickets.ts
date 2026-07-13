@@ -8,16 +8,30 @@ import {
   assignTicketSchema,
   updateTicketStatusSchema,
   updateTicketCategorySchema,
+  createReplySchema,
   type TicketListQuery,
   type AssignTicketInput,
   type UpdateTicketStatusInput,
   type UpdateTicketCategoryInput,
+  type CreateReplyInput,
 } from "@helpdesk/core/schemas/tickets";
 import { prisma } from "../lib/prisma";
 import { anthropic } from "../lib/anthropic";
 
-export { ticketListQuerySchema, assignTicketSchema, updateTicketStatusSchema, updateTicketCategorySchema };
-export type { TicketListQuery, AssignTicketInput, UpdateTicketStatusInput, UpdateTicketCategoryInput };
+export {
+  ticketListQuerySchema,
+  assignTicketSchema,
+  updateTicketStatusSchema,
+  updateTicketCategorySchema,
+  createReplySchema,
+};
+export type {
+  TicketListQuery,
+  AssignTicketInput,
+  UpdateTicketStatusInput,
+  UpdateTicketCategoryInput,
+  CreateReplyInput,
+};
 
 // Mirrors the fields we consume from Postmark's inbound webhook payload —
 // https://postmarkapp.com/developer/webhooks/inbound-webhook
@@ -136,6 +150,34 @@ export function updateTicketCategory(id: string, category: TicketCategory) {
     data: { category },
     select: { ...ticketListFields, ...assignedToField, body: true, updatedAt: true },
   });
+}
+
+const replyFields = {
+  id: true,
+  body: true,
+  senderType: true,
+  createdAt: true,
+  author: { select: { id: true, name: true } },
+} as const;
+
+export function listReplies(ticketId: string) {
+  return prisma.reply.findMany({
+    where: { ticketId },
+    select: replyFields,
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+// Stores the reply and marks the ticket RESOLVED, on the assumption a reply
+// means the agent has addressed it. Doesn't send anything to the customer —
+// there's no outbound email integration yet.
+export async function createReply(ticketId: string, authorId: string, body: string) {
+  const [reply] = await prisma.$transaction([
+    prisma.reply.create({ data: { ticketId, authorId, body }, select: replyFields }),
+    prisma.ticket.update({ where: { id: ticketId }, data: { status: TicketStatus.RESOLVED } }),
+  ]);
+
+  return reply;
 }
 
 export function createTicketFromEmail(payload: PostmarkInboundPayload) {

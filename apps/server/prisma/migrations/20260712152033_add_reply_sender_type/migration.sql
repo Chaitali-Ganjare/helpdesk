@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Reply` ADD COLUMN `senderType` VARCHAR(191) NOT NULL DEFAULT 'AGENT';

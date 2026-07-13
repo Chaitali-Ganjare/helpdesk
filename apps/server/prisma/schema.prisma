@@ -23,6 +23,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   assignedTickets Ticket[]
+  replies       Reply[]
 }
 
 model Session {
@@ -90,6 +91,24 @@ model Ticket {
   assignedTo   User?    @relation(fields: [assignedToId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  replies   Reply[]
+}
+
+model Reply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  body      String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  // Not a DB-native enum — canonical values live in
+  // packages/core/src/enums/reply-sender-type.ts, validated at the
+  // application layer (zod), same convention as Ticket.status/category/priority.
+  // Defaults to AGENT since the only creation path today is the authenticated
+  // agent-reply route; a future customer-reply path (e.g. inbound email) would
+  // pass CUSTOMER explicitly.
+  senderType String  @default("AGENT")
+  createdAt DateTime @default(now())
 }
 
 // ─── Enums ────────────────────────────────────────────────────────

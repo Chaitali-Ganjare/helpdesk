@@ -1,6 +1,7 @@
 import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
 import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
 import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
+import { ReplySenderType } from "@helpdesk/core/enums/reply-sender-type";
 
 export const statusStyles: Record<TicketStatus, string> = {
   [TicketStatus.OPEN]: "bg-blue-50 text-blue-600",
@@ -20,6 +21,11 @@ export const categoryStyles: Record<TicketCategory, string> = {
   [TicketCategory.BILLING]: "bg-emerald-50 text-emerald-600",
   [TicketCategory.ACCOUNT]: "bg-sky-50 text-sky-600",
   [TicketCategory.GENERAL]: "bg-slate-100 text-slate-600",
+};
+
+export const senderTypeStyles: Record<ReplySenderType, string> = {
+  [ReplySenderType.AGENT]: "bg-indigo-50 text-indigo-600",
+  [ReplySenderType.CUSTOMER]: "bg-slate-100 text-slate-600",
 };
 
 export function Badge({ text, className }: { text: string; className: string }) {

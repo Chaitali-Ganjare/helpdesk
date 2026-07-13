@@ -6,10 +6,13 @@ import {
   assignTicket,
   updateTicketStatus,
   updateTicketCategory,
+  listReplies,
+  createReply,
   ticketListQuerySchema,
   assignTicketSchema,
   updateTicketStatusSchema,
   updateTicketCategorySchema,
+  createReplySchema,
 } from "../services/tickets";
 import { getUserById } from "../services/users";
 import { parseQuery, parseBody } from "../lib/validate";
@@ -94,5 +97,30 @@ router.patch(
     res.json(updated);
   }
 );
+
+router.get("/:id/replies", requireAuth, async (req: Request<{ id: string }>, res: Response) => {
+  const ticket = await getTicketById(req.params.id);
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const replies = await listReplies(req.params.id);
+  res.json({ replies });
+});
+
+router.post("/:id/replies", requireAuth, async (req: Request<{ id: string }>, res: Response) => {
+  const data = parseBody(createReplySchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await getTicketById(req.params.id);
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const reply = await createReply(ticket.id, req.session!.user.id, data.body);
+  res.status(201).json(reply);
+});
 
 export default router;

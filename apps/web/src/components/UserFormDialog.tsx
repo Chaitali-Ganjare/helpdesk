@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldError } from "@/components/ui/field-error";
+import { axiosErrorMessage } from "@/lib/axios-error";
 import type { User } from "./UsersTable";
 
 type UserFormDialogProps = {
@@ -65,9 +67,7 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
     }
   }
 
-  const serverError = axios.isAxiosError(mutation.error)
-    ? (mutation.error.response?.data as { error?: string } | undefined)?.error
-    : undefined;
+  const serverError = axiosErrorMessage(mutation.error);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -90,9 +90,7 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
               aria-invalid={!!errors.name}
               {...register("name")}
             />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
+            <FieldError message={errors.name?.message} />
           </div>
 
           <div className="space-y-2">
@@ -104,9 +102,7 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
               aria-invalid={!!errors.email}
               {...register("email")}
             />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
+            <FieldError message={errors.email?.message} />
           </div>
 
           <div className="space-y-2">
@@ -119,14 +115,10 @@ export default function UserFormDialog({ open, onOpenChange, user }: UserFormDia
               aria-invalid={!!errors.password}
               {...register("password")}
             />
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
-            )}
+            <FieldError message={errors.password?.message} />
           </div>
 
-          {serverError && (
-            <p className="text-sm text-destructive">{serverError}</p>
-          )}
+          <FieldError message={serverError} />
 
           <DialogFooter>
             <Button type="submit" disabled={mutation.isPending}>

@@ -5,6 +5,7 @@ import NavBar from "../components/NavBar";
 import UserFormDialog from "../components/UserFormDialog";
 import DeleteUserDialog from "../components/DeleteUserDialog";
 import { Button } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/ui/error-message";
 import UsersTable, { type User } from "../components/UsersTable";
 
 type DialogState = { mode: "create" } | { mode: "edit"; user: User } | null;
@@ -30,11 +31,7 @@ export default function UsersPage() {
           <Button onClick={() => setDialogState({ mode: "create" })}>New user</Button>
         </div>
 
-        {error && (
-          <p className="mt-4 text-sm text-destructive">
-            Couldn't load users. Try refreshing the page.
-          </p>
-        )}
+        <ErrorMessage show={error}>Couldn't load users. Try refreshing the page.</ErrorMessage>
 
         {!error && users === undefined && (
           <p className="mt-4 text-sm text-slate-500">Loading…</p>

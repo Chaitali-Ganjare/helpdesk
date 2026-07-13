@@ -51,3 +51,8 @@ export const updateTicketCategorySchema = z.object({
   category: z.enum(Object.values(TicketCategory) as [TicketCategory, ...TicketCategory[]]),
 });
 export type UpdateTicketCategoryInput = z.infer<typeof updateTicketCategorySchema>;
+
+export const createReplySchema = z.object({
+  body: z.string().trim().min(1, "Reply cannot be empty"),
+});
+export type CreateReplyInput = z.infer<typeof createReplySchema>;

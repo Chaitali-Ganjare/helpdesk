@@ -40,10 +40,13 @@ const assignableUsers = [
   { id: "agent-2", name: "Sam Support" },
 ];
 
-function mockGetResponses(ticket: unknown) {
+function mockGetResponses(ticket: unknown, replies: unknown[] = []) {
   vi.mocked(axios.get).mockImplementation((url: string) => {
     if (url === "/api/users/assignable") {
       return Promise.resolve({ data: { users: assignableUsers } });
+    }
+    if (url.endsWith("/replies")) {
+      return Promise.resolve({ data: { replies } });
     }
     return Promise.resolve({ data: ticket });
   });
@@ -258,5 +261,82 @@ describe("TicketDetailPage", () => {
     fireEvent.change(screen.getByLabelText(/assigned to/i), { target: { value: "agent-1" } });
 
     expect(await screen.findByText(/assignee not found/i)).toBeInTheDocument();
+  });
+
+  it("renders existing replies in order", async () => {
+    mockGetResponses(baseTicket, [
+      {
+        id: "reply-1",
+        body: "We're looking into this.",
+        senderType: "AGENT",
+        createdAt: "2026-01-03T00:00:00.000Z",
+        author: { id: "agent-1", name: "Alex Agent" },
+      },
+    ]);
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    const replyBody = await screen.findByText("We're looking into this.");
+    expect(replyBody.closest("div")).toHaveTextContent("Alex Agent");
+    expect(replyBody.closest("div")).toHaveTextContent("Agent");
+  });
+
+  it("shows a validation error and does not submit when the reply is empty", async () => {
+    mockGetResponses(baseTicket);
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+    expect(await screen.findByText(/reply cannot be empty/i)).toBeInTheDocument();
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  it("submits a reply and clears the form", async () => {
+    mockGetResponses(baseTicket);
+    vi.mocked(axios.post).mockResolvedValue({
+      data: {
+        id: "reply-1",
+        body: "Please try again.",
+        senderType: "AGENT",
+        createdAt: "2026-01-03T00:00:00.000Z",
+        author: { id: "agent-1", name: "Alex Agent" },
+      },
+    });
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    fireEvent.change(screen.getByLabelText(/reply/i), {
+      target: { value: "Please try again." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+    await waitFor(() =>
+      expect(axios.post).toHaveBeenCalledWith("/api/tickets/1/replies", {
+        body: "Please try again.",
+      })
+    );
+    await waitFor(() => expect(screen.getByLabelText(/reply/i)).toHaveValue(""));
+  });
+
+  it("shows the server's error message when a reply fails to send", async () => {
+    mockGetResponses(baseTicket);
+    vi.mocked(axios.post).mockRejectedValue({
+      response: { data: { error: "Failed to send email" } },
+    });
+    vi.mocked(axios.isAxiosError).mockImplementation((error) => Boolean(error));
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    fireEvent.change(screen.getByLabelText(/reply/i), {
+      target: { value: "Please try again." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send reply/i }));
+
+    expect(await screen.findByText(/failed to send email/i)).toBeInTheDocument();
   });
 });

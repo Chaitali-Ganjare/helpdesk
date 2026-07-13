@@ -185,6 +185,15 @@ exports.Prisma.TicketScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ReplyScalarFieldEnum = {
+  id: 'id',
+  ticketId: 'ticketId',
+  body: 'body',
+  authorId: 'authorId',
+  senderType: 'senderType',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -204,7 +213,8 @@ exports.Prisma.ModelName = {
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
-  Ticket: 'Ticket'
+  Ticket: 'Ticket',
+  Reply: 'Reply'
 };
 
 /**

@@ -5,11 +5,13 @@ import type { SortingState } from "@tanstack/react-table";
 import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
 import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
 import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
+import type { Ticket } from "@helpdesk/core/types/tickets";
 import NavBar from "../components/NavBar";
-import TicketsTable, { type Ticket } from "../components/TicketsTable";
+import TicketsTable from "../components/TicketsTable";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/ui/error-message";
 
 type TicketsResponse = {
   tickets: Ticket[];
@@ -124,11 +126,7 @@ export default function TicketsPage() {
           </Select>
         </div>
 
-        {error && (
-          <p className="mt-4 text-sm text-destructive">
-            Couldn't load tickets. Try refreshing the page.
-          </p>
-        )}
+        <ErrorMessage show={error}>Couldn't load tickets. Try refreshing the page.</ErrorMessage>
 
         {!error && tickets === undefined && (
           <p className="mt-4 text-sm text-slate-500">Loading…</p>
