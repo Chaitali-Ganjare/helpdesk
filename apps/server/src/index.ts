@@ -31,14 +31,11 @@ const authLimiter = rateLimit({
 });
 app.use("/api/auth/sign-in", authLimiter);
 
-// Auth handler must be before CORS, Helmet, and body parsing.
-// Express 5's path-to-regexp requires a named wildcard (`*splat`), not a bare `*`.
-app.all("/api/auth/*splat", toNodeHandler(auth));
-
-// Standard security headers (CSP, X-Frame-Options, HSTS, etc.)
-app.use(helmet());
-
-// CORS: origin is env-driven so the same build works in dev and production.
+// CORS must be registered before the auth handler — better-auth's Express docs
+// mount it via toNodeHandler, which responds directly and never reaches
+// middleware registered after it. Only express.json() has to come after the
+// auth handler (better-auth needs the raw body); cors() does not.
+// origin is env-driven so the same build works in dev and production.
 // `credentials: true` is required for the browser to send the session cookie
 // on cross-origin requests (web and API are separate Railway services).
 const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173").split(",");
@@ -49,6 +46,12 @@ app.use(
     credentials: true,
   })
 );
+
+// Standard security headers (CSP, X-Frame-Options, HSTS, etc.)
+app.use(helmet());
+
+// Express 5's path-to-regexp requires a named wildcard (`*splat`), not a bare `*`.
+app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.use(express.json());
 
