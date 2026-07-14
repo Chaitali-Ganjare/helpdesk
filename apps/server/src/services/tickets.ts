@@ -3,12 +3,14 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
 import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
 import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
+import type { DashboardStats } from "@helpdesk/core/types/dashboard";
 import {
   ticketListQuerySchema,
   assignTicketSchema,
   updateTicketStatusSchema,
   updateTicketCategorySchema,
   createReplySchema,
+  AI_ASSIGNEE,
   type TicketListQuery,
   type AssignTicketInput,
   type UpdateTicketStatusInput,
@@ -17,6 +19,7 @@ import {
 } from "@helpdesk/core/schemas/tickets";
 import { prisma } from "../lib/prisma";
 import { anthropic } from "../lib/anthropic";
+import { getPostmarkClient } from "../lib/postmark";
 
 export {
   ticketListQuerySchema,
@@ -24,6 +27,7 @@ export {
   updateTicketStatusSchema,
   updateTicketCategorySchema,
   createReplySchema,
+  AI_ASSIGNEE,
 };
 export type {
   TicketListQuery,
@@ -119,7 +123,10 @@ export function findTicketByMessageId(messageId: string) {
   return prisma.ticket.findUnique({ where: { messageId } });
 }
 
-const assignedToField = { assignedTo: { select: { id: true, name: true } } } as const;
+const assignedToField = {
+  assignedTo: { select: { id: true, name: true } },
+  assignedToAI: true,
+} as const;
 
 export function getTicketById(id: string) {
   return prisma.ticket.findUnique({
@@ -128,10 +135,16 @@ export function getTicketById(id: string) {
   });
 }
 
-export function assignTicket(id: string, assignedToId: string | null) {
+// `assignedTo` is the parsed AssignTicketInput value: null unassigns,
+// AI_ASSIGNEE assigns to AI (clears assignedToId), any other string is a
+// User id (clears assignedToAI) — the two are mutually exclusive on Ticket.
+export function assignTicket(id: string, assignedTo: string | null) {
   return prisma.ticket.update({
     where: { id },
-    data: { assignedToId },
+    data:
+      assignedTo === AI_ASSIGNEE
+        ? { assignedToId: null, assignedToAI: true }
+        : { assignedToId: assignedTo, assignedToAI: false },
     select: { ...ticketListFields, ...assignedToField, body: true, updatedAt: true },
   });
 }
@@ -168,14 +181,52 @@ export function listReplies(ticketId: string) {
   });
 }
 
+// Threads the outbound email onto the original inbound message via
+// In-Reply-To/References so it lands in the customer's existing thread
+// instead of starting a new one — mirrors ticket.messageId, which is only
+// ever populated by the inbound webhook (see createTicketFromEmail).
+async function sendReplyEmail(
+  ticket: { subject: string; fromEmail: string; messageId: string | null },
+  body: string
+) {
+  const subject = ticket.subject.trim().toLowerCase().startsWith("re:")
+    ? ticket.subject
+    : `Re: ${ticket.subject}`;
+
+  await getPostmarkClient().sendEmail({
+    From: process.env.POSTMARK_FROM_EMAIL!,
+    To: ticket.fromEmail,
+    Subject: subject,
+    TextBody: body,
+    MessageStream: "outbound",
+    Headers: ticket.messageId
+      ? [
+          { Name: "In-Reply-To", Value: ticket.messageId },
+          { Name: "References", Value: ticket.messageId },
+        ]
+      : undefined,
+  });
+}
+
 // Stores the reply and marks the ticket RESOLVED, on the assumption a reply
-// means the agent has addressed it. Doesn't send anything to the customer —
-// there's no outbound email integration yet.
+// means the agent has addressed it, then emails it to the customer via
+// Postmark's Send API. The DB write and the send are not atomic with each
+// other — if sendReplyEmail throws, the reply row is already committed (it
+// stays visible on the ticket as the agent's response) but the error still
+// propagates to the route, so the agent sees the failure and knows delivery
+// didn't happen. A retry from the UI will create a second Reply row; add an
+// idempotency/delivery-status field if that becomes a real problem.
 export async function createReply(ticketId: string, authorId: string, body: string) {
-  const [reply] = await prisma.$transaction([
+  const [reply, ticket] = await prisma.$transaction([
     prisma.reply.create({ data: { ticketId, authorId, body }, select: replyFields }),
-    prisma.ticket.update({ where: { id: ticketId }, data: { status: TicketStatus.RESOLVED } }),
+    prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status: TicketStatus.RESOLVED },
+      select: { subject: true, fromEmail: true, messageId: true },
+    }),
   ]);
+
+  await sendReplyEmail(ticket, body);
 
   return reply;
 }
@@ -192,6 +243,79 @@ export function createTicketFromEmail(payload: PostmarkInboundPayload) {
       messageId: payload.MessageID,
     },
   });
+}
+
+const resolvedOrClosedWhere = {
+  status: { in: [TicketStatus.RESOLVED, TicketStatus.CLOSED] as TicketStatus[] },
+};
+
+const TICKETS_PER_DAY_WINDOW = 30;
+
+// Bucketed in JS rather than a raw SQL date-trunc query — ticket volume here
+// doesn't warrant it, and this keeps the query portable/testable. Buckets are
+// UTC calendar days; zero-count days are filled in so the chart always shows
+// a full 30-day run, oldest first.
+function ticketsPerDay(createdAts: Date[]): { date: string; count: number }[] {
+  const days: { date: string; count: number }[] = [];
+  const counts = new Map<string, number>();
+  for (const createdAt of createdAts) {
+    const key = createdAt.toISOString().slice(0, 10);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const today = new Date();
+  for (let i = TICKETS_PER_DAY_WINDOW - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push({ date: key, count: counts.get(key) ?? 0 });
+  }
+  return days;
+}
+
+// "Resolved by AI" = assigned to AI (Ticket.assignedToAI, see assignTicket)
+// and resolved or closed. There's no AI auto-reply feature in this codebase
+// yet (see implementation-plan.md Phase 6) — assignedToAI today only
+// reflects an agent/admin manually marking "AI handled this", not an
+// autonomous resolution — but it's a deliberate signal rather than an
+// inferred proxy, unlike counting replies would be.
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - (TICKETS_PER_DAY_WINDOW - 1));
+  since.setUTCHours(0, 0, 0, 0);
+
+  const [total, open, aiResolved, resolvedTimes, recentTickets] = await Promise.all([
+    prisma.ticket.count(),
+    prisma.ticket.count({ where: { status: TicketStatus.OPEN } }),
+    prisma.ticket.count({ where: { ...resolvedOrClosedWhere, assignedToAI: true } }),
+    prisma.ticket.findMany({
+      where: resolvedOrClosedWhere,
+      select: { createdAt: true, updatedAt: true },
+    }),
+    prisma.ticket.findMany({
+      where: { createdAt: { gte: since } },
+      select: { createdAt: true },
+    }),
+  ]);
+
+  const avgResolutionMinutes =
+    resolvedTimes.length > 0
+      ? resolvedTimes.reduce(
+          (sum, t) => sum + (t.updatedAt.getTime() - t.createdAt.getTime()),
+          0
+        ) /
+        resolvedTimes.length /
+        60_000
+      : null;
+
+  return {
+    total,
+    open,
+    aiResolved,
+    aiResolvedPercent: total > 0 ? (aiResolved / total) * 100 : null,
+    avgResolutionMinutes,
+    ticketsPerDay: ticketsPerDay(recentTickets.map((t) => t.createdAt)),
+  };
 }
 
 const classificationSchema = z.object({

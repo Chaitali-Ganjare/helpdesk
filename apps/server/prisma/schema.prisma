@@ -71,7 +71,7 @@ model Verification {
 model Ticket {
   id        String   @id @default(cuid())
   subject   String
-  body      String
+  body      String   @db.Text
   fromEmail String
   fromName  String?
   // Not a DB-native enum — the frontend can't import Prisma's generated
@@ -87,8 +87,17 @@ model Ticket {
   priority  String?
   messageId String?  @unique
   // Assigned agent/admin working the ticket — nullable, unassigned by default.
+  // Mutually exclusive with assignedToAI (enforced in services/tickets.ts's
+  // assignTicket, not the DB): a ticket is unassigned, assigned to a human,
+  // or assigned to AI, never more than one of those at once.
   assignedToId String?
   assignedTo   User?    @relation(fields: [assignedToId], references: [id])
+  // True when the ticket is assigned to "AI" instead of a human agent/admin —
+  // there's no AI user row (User is tied into better-auth's login/session
+  // model, which doesn't apply here), so this is a plain flag rather than
+  // another assignedToId value. Also feeds the dashboard's "resolved by AI"
+  // stat (see getDashboardStats): assignedToAI + status RESOLVED/CLOSED.
+  assignedToAI Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   replies   Reply[]
@@ -98,7 +107,7 @@ model Reply {
   id        String   @id @default(cuid())
   ticketId  String
   ticket    Ticket   @relation(fields: [ticketId], references: [id])
-  body      String
+  body      String   @db.Text
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
   // Not a DB-native enum — canonical values live in

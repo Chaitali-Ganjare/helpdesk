@@ -1,0 +1,10 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "bun install && bun run --cwd apps/web build",
+    "watchPatterns": ["apps/web/**", "packages/core/**", "package.json", "bun.lock"]
+  },
+  "deploy": {
+    "startCommand": "bun run --cwd apps/web start"
+  }
+}

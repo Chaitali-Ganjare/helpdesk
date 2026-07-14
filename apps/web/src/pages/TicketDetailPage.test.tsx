@@ -31,6 +31,7 @@ const baseTicket = {
   category: TicketCategory.ACCOUNT,
   priority: TicketPriority.HIGH,
   assignedTo: null,
+  assignedToAI: false,
   createdAt: "2026-01-02T00:00:00.000Z",
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
@@ -203,7 +204,7 @@ describe("TicketDetailPage", () => {
 
     await waitFor(() =>
       expect(axios.patch).toHaveBeenCalledWith("/api/tickets/1/assign", {
-        assignedToId: "agent-1",
+        assignedTo: "agent-1",
       })
     );
   });
@@ -220,7 +221,34 @@ describe("TicketDetailPage", () => {
 
     await waitFor(() =>
       expect(axios.patch).toHaveBeenCalledWith("/api/tickets/1/assign", {
-        assignedToId: null,
+        assignedTo: null,
+      })
+    );
+  });
+
+  it("pre-selects AI when the ticket is assigned to AI", async () => {
+    mockGetResponses({ ...baseTicket, assignedToAI: true });
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    expect(screen.getByLabelText(/assigned to/i)).toHaveValue("AI");
+  });
+
+  it("PATCHes the ticket with AI when 'AI' is chosen", async () => {
+    mockGetResponses(baseTicket);
+    vi.mocked(axios.patch).mockResolvedValue({
+      data: { ...baseTicket, assignedTo: null, assignedToAI: true },
+    });
+
+    renderDetailPage("1");
+    await screen.findByText("Cannot log in");
+
+    fireEvent.change(screen.getByLabelText(/assigned to/i), { target: { value: "AI" } });
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith("/api/tickets/1/assign", {
+        assignedTo: "AI",
       })
     );
   });

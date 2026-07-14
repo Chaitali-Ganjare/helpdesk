@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "bun install && bun run --cwd apps/server generate",
+    "watchPatterns": ["apps/server/**", "packages/core/**", "package.json", "bun.lock"]
+  },
+  "deploy": {
+    "startCommand": "bun run --cwd apps/server migrate:deploy && bun run --cwd apps/server start",
+    "healthcheckPath": "/api/health"
+  }
+}

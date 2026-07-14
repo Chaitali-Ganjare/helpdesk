@@ -5114,6 +5114,7 @@ export namespace Prisma {
     priority: string | null
     messageId: string | null
     assignedToId: string | null
+    assignedToAI: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -5129,6 +5130,7 @@ export namespace Prisma {
     priority: string | null
     messageId: string | null
     assignedToId: string | null
+    assignedToAI: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -5144,6 +5146,7 @@ export namespace Prisma {
     priority: number
     messageId: number
     assignedToId: number
+    assignedToAI: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -5161,6 +5164,7 @@ export namespace Prisma {
     priority?: true
     messageId?: true
     assignedToId?: true
+    assignedToAI?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -5176,6 +5180,7 @@ export namespace Prisma {
     priority?: true
     messageId?: true
     assignedToId?: true
+    assignedToAI?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -5191,6 +5196,7 @@ export namespace Prisma {
     priority?: true
     messageId?: true
     assignedToId?: true
+    assignedToAI?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -5279,6 +5285,7 @@ export namespace Prisma {
     priority: string | null
     messageId: string | null
     assignedToId: string | null
+    assignedToAI: boolean
     createdAt: Date
     updatedAt: Date
     _count: TicketCountAggregateOutputType | null
@@ -5311,6 +5318,7 @@ export namespace Prisma {
     priority?: boolean
     messageId?: boolean
     assignedToId?: boolean
+    assignedToAI?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     assignedTo?: boolean | Ticket$assignedToArgs<ExtArgs>
@@ -5330,6 +5338,7 @@ export namespace Prisma {
     priority?: boolean
     messageId?: boolean
     assignedToId?: boolean
+    assignedToAI?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
@@ -5357,6 +5366,7 @@ export namespace Prisma {
       priority: string | null
       messageId: string | null
       assignedToId: string | null
+      assignedToAI: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["ticket"]>
@@ -5740,6 +5750,7 @@ export namespace Prisma {
     readonly priority: FieldRef<"Ticket", 'String'>
     readonly messageId: FieldRef<"Ticket", 'String'>
     readonly assignedToId: FieldRef<"Ticket", 'String'>
+    readonly assignedToAI: FieldRef<"Ticket", 'Boolean'>
     readonly createdAt: FieldRef<"Ticket", 'DateTime'>
     readonly updatedAt: FieldRef<"Ticket", 'DateTime'>
   }
@@ -7069,6 +7080,7 @@ export namespace Prisma {
     priority: 'priority',
     messageId: 'messageId',
     assignedToId: 'assignedToId',
+    assignedToAI: 'assignedToAI',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -7468,6 +7480,7 @@ export namespace Prisma {
     priority?: StringNullableFilter<"Ticket"> | string | null
     messageId?: StringNullableFilter<"Ticket"> | string | null
     assignedToId?: StringNullableFilter<"Ticket"> | string | null
+    assignedToAI?: BoolFilter<"Ticket"> | boolean
     createdAt?: DateTimeFilter<"Ticket"> | Date | string
     updatedAt?: DateTimeFilter<"Ticket"> | Date | string
     assignedTo?: XOR<UserNullableRelationFilter, UserWhereInput> | null
@@ -7485,6 +7498,7 @@ export namespace Prisma {
     priority?: SortOrderInput | SortOrder
     messageId?: SortOrderInput | SortOrder
     assignedToId?: SortOrderInput | SortOrder
+    assignedToAI?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     assignedTo?: UserOrderByWithRelationInput
@@ -7505,6 +7519,7 @@ export namespace Prisma {
     category?: StringNullableFilter<"Ticket"> | string | null
     priority?: StringNullableFilter<"Ticket"> | string | null
     assignedToId?: StringNullableFilter<"Ticket"> | string | null
+    assignedToAI?: BoolFilter<"Ticket"> | boolean
     createdAt?: DateTimeFilter<"Ticket"> | Date | string
     updatedAt?: DateTimeFilter<"Ticket"> | Date | string
     assignedTo?: XOR<UserNullableRelationFilter, UserWhereInput> | null
@@ -7522,6 +7537,7 @@ export namespace Prisma {
     priority?: SortOrderInput | SortOrder
     messageId?: SortOrderInput | SortOrder
     assignedToId?: SortOrderInput | SortOrder
+    assignedToAI?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: TicketCountOrderByAggregateInput
@@ -7543,6 +7559,7 @@ export namespace Prisma {
     priority?: StringNullableWithAggregatesFilter<"Ticket"> | string | null
     messageId?: StringNullableWithAggregatesFilter<"Ticket"> | string | null
     assignedToId?: StringNullableWithAggregatesFilter<"Ticket"> | string | null
+    assignedToAI?: BoolWithAggregatesFilter<"Ticket"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Ticket"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Ticket"> | Date | string
   }
@@ -7970,6 +7987,7 @@ export namespace Prisma {
     category?: string | null
     priority?: string | null
     messageId?: string | null
+    assignedToAI?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     assignedTo?: UserCreateNestedOneWithoutAssignedTicketsInput
@@ -7987,6 +8005,7 @@ export namespace Prisma {
     priority?: string | null
     messageId?: string | null
     assignedToId?: string | null
+    assignedToAI?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     replies?: ReplyUncheckedCreateNestedManyWithoutTicketInput
@@ -8002,6 +8021,7 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedTo?: UserUpdateOneWithoutAssignedTicketsNestedInput
@@ -8019,6 +8039,7 @@ export namespace Prisma {
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
     assignedToId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     replies?: ReplyUncheckedUpdateManyWithoutTicketNestedInput
@@ -8035,6 +8056,7 @@ export namespace Prisma {
     priority?: string | null
     messageId?: string | null
     assignedToId?: string | null
+    assignedToAI?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -8049,6 +8071,7 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -8064,6 +8087,7 @@ export namespace Prisma {
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
     assignedToId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -8486,6 +8510,7 @@ export namespace Prisma {
     priority?: SortOrder
     messageId?: SortOrder
     assignedToId?: SortOrder
+    assignedToAI?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -8501,6 +8526,7 @@ export namespace Prisma {
     priority?: SortOrder
     messageId?: SortOrder
     assignedToId?: SortOrder
+    assignedToAI?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -8516,6 +8542,7 @@ export namespace Prisma {
     priority?: SortOrder
     messageId?: SortOrder
     assignedToId?: SortOrder
+    assignedToAI?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -9102,6 +9129,7 @@ export namespace Prisma {
     category?: string | null
     priority?: string | null
     messageId?: string | null
+    assignedToAI?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     replies?: ReplyCreateNestedManyWithoutTicketInput
@@ -9117,6 +9145,7 @@ export namespace Prisma {
     category?: string | null
     priority?: string | null
     messageId?: string | null
+    assignedToAI?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     replies?: ReplyUncheckedCreateNestedManyWithoutTicketInput
@@ -9253,6 +9282,7 @@ export namespace Prisma {
     priority?: StringNullableFilter<"Ticket"> | string | null
     messageId?: StringNullableFilter<"Ticket"> | string | null
     assignedToId?: StringNullableFilter<"Ticket"> | string | null
+    assignedToAI?: BoolFilter<"Ticket"> | boolean
     createdAt?: DateTimeFilter<"Ticket"> | Date | string
     updatedAt?: DateTimeFilter<"Ticket"> | Date | string
   }
@@ -9565,6 +9595,7 @@ export namespace Prisma {
     category?: string | null
     priority?: string | null
     messageId?: string | null
+    assignedToAI?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     assignedTo?: UserCreateNestedOneWithoutAssignedTicketsInput
@@ -9581,6 +9612,7 @@ export namespace Prisma {
     priority?: string | null
     messageId?: string | null
     assignedToId?: string | null
+    assignedToAI?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -9646,6 +9678,7 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assignedTo?: UserUpdateOneWithoutAssignedTicketsNestedInput
@@ -9662,6 +9695,7 @@ export namespace Prisma {
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
     assignedToId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -9742,6 +9776,7 @@ export namespace Prisma {
     category?: string | null
     priority?: string | null
     messageId?: string | null
+    assignedToAI?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -9839,6 +9874,7 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     replies?: ReplyUpdateManyWithoutTicketNestedInput
@@ -9854,6 +9890,7 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     replies?: ReplyUncheckedUpdateManyWithoutTicketNestedInput
@@ -9869,6 +9906,7 @@ export namespace Prisma {
     category?: NullableStringFieldUpdateOperationsInput | string | null
     priority?: NullableStringFieldUpdateOperationsInput | string | null
     messageId?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedToAI?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

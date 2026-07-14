@@ -13,6 +13,7 @@ import {
   updateTicketStatusSchema,
   updateTicketCategorySchema,
   createReplySchema,
+  AI_ASSIGNEE,
 } from "../services/tickets";
 import { getUserById } from "../services/users";
 import { parseQuery, parseBody } from "../lib/validate";
@@ -49,15 +50,15 @@ router.patch(
       return;
     }
 
-    if (data.assignedToId) {
-      const assignee = await getUserById(data.assignedToId);
+    if (data.assignedTo && data.assignedTo !== AI_ASSIGNEE) {
+      const assignee = await getUserById(data.assignedTo);
       if (!assignee) {
         res.status(404).json({ error: "Assignee not found" });
         return;
       }
     }
 
-    const updated = await assignTicket(req.params.id, data.assignedToId);
+    const updated = await assignTicket(req.params.id, data.assignedTo);
     res.json(updated);
   }
 );

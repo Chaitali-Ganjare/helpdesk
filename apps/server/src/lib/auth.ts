@@ -12,6 +12,21 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: true,
   },
+  // Web and API deploy as separate Railway services (different origins, not
+  // subdomains of a shared parent domain), so the session cookie needs
+  // SameSite=None to ride along on cross-origin requests. Only in production:
+  // SameSite=None requires Secure, which requires HTTPS, which localhost dev
+  // doesn't have.
+  advanced:
+    process.env.NODE_ENV === "production"
+      ? {
+          defaultCookieAttributes: {
+            sameSite: "none",
+            secure: true,
+            partitioned: true,
+          },
+        }
+      : undefined,
   user: {
     additionalFields: {
       role: {

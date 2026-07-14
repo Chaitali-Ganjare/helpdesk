@@ -1,18 +1,21 @@
+import "./instrument";
 import express, { type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
+import * as Sentry from "@sentry/node";
 import { toNodeHandler } from "better-auth/node";
 import { prisma } from "./lib/prisma";
 import { auth } from "./lib/auth";
 import usersRouter from "./routes/users";
 import webhooksRouter from "./routes/webhooks";
 import ticketsRouter from "./routes/tickets";
+import dashboardRouter from "./routes/dashboard";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
 
-// Trust exactly one proxy hop (the Vercel / reverse-proxy layer).
+// Trust exactly one proxy hop (Railway's edge proxy in production).
 // `true` would trust all X-Forwarded-For headers unconditionally,
 // enabling IP spoofing that defeats rate limiting.
 app.set("trust proxy", 1);
@@ -37,7 +40,7 @@ app.use(helmet());
 
 // CORS: origin is env-driven so the same build works in dev and production.
 // `credentials: true` is required for the browser to send the session cookie
-// on cross-origin requests (Vercel frontend → Vercel API).
+// on cross-origin requests (web and API are separate Railway services).
 const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173").split(",");
 
 app.use(
@@ -61,6 +64,11 @@ app.get("/api/health", async (_req: Request, res: Response, next: NextFunction) 
 app.use("/api/users", usersRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/tickets", ticketsRouter);
+app.use("/api/dashboard", dashboardRouter);
+
+// Reports errors from routes/services to Sentry. Must be registered after all
+// routes but before the fallback error handler below.
+Sentry.setupExpressErrorHandler(app);
 
 // Global error handler — must be the last middleware registered.
 // Logs the full error server-side; sends a generic message to the client.

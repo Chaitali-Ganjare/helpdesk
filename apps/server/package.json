@@ -5,6 +5,8 @@
     "dev": "bun run --watch src/index.ts",
     "start": "bun src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
+    "generate": "prisma generate",
+    "migrate:deploy": "prisma migrate deploy",
     "seed:user": "bun run --env-file .env scripts/seed-user.ts",
     "start:test": "bun run --env-file .env.test src/index.ts"
   },
@@ -12,11 +14,13 @@
     "@anthropic-ai/sdk": "^0.111.0",
     "@helpdesk/core": "workspace:*",
     "@prisma/client": "5",
+    "@sentry/node": "^10.65.0",
     "better-auth": "^1.6.22",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
+    "postmark": "^5.1.0",
     "prisma": "5",
     "zod": "^4.4.3"
   },

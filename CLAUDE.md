@@ -4,7 +4,7 @@
 AI-powered support ticket management system. Agents receive emails, which are auto-classified and responded to using a RAG knowledge base. See `project-scope.md` for full requirements and `implementation-plan.md` for the phased task breakdown.
 
 ## Tech Stack
-See `tech-stack.md` for the full rationale. Summary:
+See `tech-stack.md` for the full rationale — note that the implemented architecture (separate Express API + Vite SPA, MySQL) diverged from that doc's original Next.js/Postgres/Vercel+Neon plan, which is why Database and Deploy below don't match it. Summary:
 
 | Layer        | Choice                                      |
 |--------------|---------------------------------------------|
@@ -15,7 +15,7 @@ See `tech-stack.md` for the full rationale. Summary:
 | Auth         | better-auth + Prisma adapter (database sessions)               |
 | AI           | Anthropic Claude API (`claude-sonnet-4-6`)  |
 | Email        | Postmark (inbound webhook + outbound)       |
-| Deploy       | Vercel + Neon                               |
+| Deploy       | Railway (two services — see Deployment below) |
 
 ## Monorepo Structure
 ```
@@ -163,7 +163,7 @@ An inbound email to the configured support address arrives as a Postmark webhook
 
 Webhook processing itself (parse → dedup-check → create → respond) is synchronous — a deliberate choice while volume is small; revisit if/when this becomes a bottleneck.
 
-**Replies**: an agent/admin can reply from the ticket detail page (`apps/web/src/pages/TicketDetailPage.tsx` + `apps/web/src/components/ReplyForm.tsx`) via `GET`/`POST /api/tickets/:id/replies`. `createReply` (`apps/server/src/services/tickets.ts`) stores the `Reply` row and sets the ticket's status to `RESOLVED` in one `prisma.$transaction` — it does **not** send anything to the customer; there's no outbound email integration yet (only the inbound webhook above). `Reply.senderType` (`@helpdesk/core/enums/reply-sender-type.ts`, same plain-`String`-column-validated-by-zod convention as `Ticket.status`/`category`/`priority`) defaults to `AGENT` since this route is the only creation path today; a future customer-facing reply path (e.g. parsing inbound replies tied to an existing ticket) would pass `CUSTOMER` explicitly.
+**Replies**: an agent/admin can reply from the ticket detail page (`apps/web/src/pages/TicketDetailPage.tsx` + `apps/web/src/components/ReplyForm.tsx`) via `GET`/`POST /api/tickets/:id/replies`. `createReply` (`apps/server/src/services/tickets.ts`) stores the `Reply` row and sets the ticket's status to `RESOLVED` in one `prisma.$transaction`, then emails it to the customer via `sendReplyEmail` (same file), which calls Postmark's Send API (`postmarkClient.sendEmail`, `apps/server/src/lib/postmark.ts`, using `POSTMARK_SERVER_TOKEN`/`POSTMARK_FROM_EMAIL`). The outbound email threads onto the original inbound message with `In-Reply-To`/`References` headers set to `Ticket.messageId` (when present), and prefixes the subject with `Re: ` (skipped if already present) so it lands in the customer's existing thread. The DB write and the send are **not** atomic — the reply row is committed before the send is attempted, so a failed send still leaves the reply visible on the ticket, but the error propagates to the route (no try/catch, standard Express 5 convention) so the agent sees the failure rather than believing delivery silently succeeded; retrying from the UI creates a second `Reply` row (no idempotency/delivery-status field yet — acceptable for now, revisit if it becomes a real problem). `Reply.senderType` (`@helpdesk/core/enums/reply-sender-type.ts`, same plain-`String`-column-validated-by-zod convention as `Ticket.status`/`category`/`priority`) defaults to `AGENT` since this route is the only creation path today; a future customer-facing reply path (e.g. parsing inbound replies tied to an existing ticket) would pass `CUSTOMER` explicitly. In `apps/server/.env.test`/`.env.test.example`, `POSTMARK_SERVER_TOKEN` is set to Postmark's official test-mode token (`POSTMARK_API_TEST`) — it validates Send API calls without delivering real email or needing a real domain, so e2e tests can exercise the reply flow safely.
 
 **Listing**: `GET /api/tickets` (`apps/server/src/routes/tickets.ts`) returns all tickets, `orderBy: { createdAt: "desc" }` (newest first) — gated by `requireAuth` (any authenticated user, ADMIN or AGENT; unlike `/api/users` this is not admin-only, since agents need to see tickets too). Rendered at `/tickets` (`apps/web/src/pages/TicketsPage.tsx` + `TicketsTable.tsx`), linked from `NavBar` for every authenticated user.
 
@@ -174,12 +174,15 @@ Copy `.env.example` to `.env` in `apps/server/`. Required vars:
 
 ```
 PORT=3000
+NODE_ENV=                      # "production" on the deployed API service — gates cross-domain cookie attrs, see lib/auth.ts
 
 DATABASE_URL=                  # MySQL connection string
 
 BETTER_AUTH_SECRET=            # openssl rand -base64 32
 BETTER_AUTH_URL=               # e.g. http://localhost:3000
 BETTER_AUTH_TRUSTED_ORIGINS=   # comma-separated, e.g. http://localhost:5173
+
+CORS_ORIGIN=                   # comma-separated allowed origins; the deployed web service's URL in production
 
 SEED_EMAIL=                    # used by scripts/seed-user.ts
 SEED_PASSWORD=
@@ -191,7 +194,30 @@ POSTMARK_SERVER_TOKEN=
 POSTMARK_FROM_EMAIL=
 POSTMARK_INBOUND_USERNAME=     # Basic Auth username for the inbound webhook; embed in the Postmark-configured URL
 POSTMARK_INBOUND_PASSWORD=     # Basic Auth password for the inbound webhook; embed in the Postmark-configured URL
+
+SENTRY_DSN=                    # error tracking — leave blank to disable
 ```
+
+`apps/web/.env.example` (copy to `.env.local`, Vite-ignored by default) has the frontend counterparts: `VITE_SENTRY_DSN` and `VITE_API_URL` (the deployed API service's URL — leave blank in dev, see Deployment below).
+
+## Deployment (Railway)
+Two independent Railway services, both with **Root Directory** left at the repo root (`/`) — required so `bun install` sees the workspace root and links `@helpdesk/core` — differentiated by each service's **Config File Path** setting (Railway service settings → the config file path is absolute and ignores Root Directory, per Railway's own docs):
+
+| Service | Config file | Builds | Serves |
+|---|---|---|---|
+| API | `/railway.server.json` | `apps/server` via Bun | Express on `$PORT`, `/api/health` as the healthcheck path |
+| Web | `/railway.web.json` | `apps/web` via `vite build` | The static build via `apps/web/serve.ts` (a small `Bun.serve` static file server with SPA fallback to `index.html`, since there's no server-side router to match client-side routes like `/tickets/abc123` on a hard refresh) |
+
+Because these are two separate Railway services (different origins, not subdomains of a shared parent domain), the deployment is inherently cross-origin — unlike the single-Vercel-origin setup `tech-stack.md` originally envisioned:
+- **CORS**: server's `CORS_ORIGIN` must include the web service's public URL.
+- **Auth cookie**: `lib/auth.ts` sets `advanced.defaultCookieAttributes` to `{ sameSite: "none", secure: true, partitioned: true }`, but only when `NODE_ENV=production` (SameSite=None requires Secure, which requires HTTPS — localhost dev has neither) — set `NODE_ENV=production` on the API service.
+- **Frontend → API calls**: `apps/web/src/main.tsx` sets `axios.defaults.baseURL`/`withCredentials` globally from `VITE_API_URL` (every call site uses a relative `axios.get("/api/...")` path per this doc's Frontend Data Fetching conventions — see that section — so this one global config covers all of them). `apps/web/src/lib/auth-client.ts`'s `baseURL` follows the same env var. **`VITE_API_URL` is baked in at build time** (standard Vite behavior) — it must be set on the web service *before* its build runs, not just at runtime.
+- **Prisma migrations**: the API service's `deploy.startCommand` in `railway.server.json` runs `bun run --cwd apps/server migrate:deploy` (i.e. `prisma migrate deploy`, the non-interactive/non-destructive counterpart to `prisma migrate dev`) before starting the server.
+- **Prisma client codegen**: `apps/server/src/generated/prisma` is checked into git (see Prisma section above), but the committed binary is whatever platform last ran `prisma generate` locally — not necessarily Railway's Linux runtime. `railway.server.json`'s `build.buildCommand` re-runs `bun run --cwd apps/server generate` during the Railway build so the query engine binary always matches the platform it'll actually run on.
+- **Admin seed user**: run `bun run --cwd apps/server scripts/seed-user.ts` via `railway run` (inherits the API service's env vars directly, unlike the local `seed:user` script which loads `.env` via `--env-file`) once after the first deploy.
+- **Database**: Railway's MySQL plugin — reference its connection string into the API service's `DATABASE_URL`.
+
+Deploy order matters because of the circular env-var dependency above: create the MySQL plugin and API service first (get its Railway-assigned public URL), *then* create the web service with `VITE_API_URL` set to that API URL before its first build, then go back and set `CORS_ORIGIN`/`BETTER_AUTH_TRUSTED_ORIGINS` on the API service to the now-known web URL and redeploy it.
 
 ## Testing Strategy — component tests first
 Default to a Vitest component test (below). Only reach for a Playwright e2e test when the thing being verified genuinely can't be checked by rendering a component with mocked data — e.g. it depends on:

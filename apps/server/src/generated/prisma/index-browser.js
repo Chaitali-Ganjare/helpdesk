@@ -181,6 +181,7 @@ exports.Prisma.TicketScalarFieldEnum = {
   priority: 'priority',
   messageId: 'messageId',
   assignedToId: 'assignedToId',
+  assignedToAI: 'assignedToAI',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

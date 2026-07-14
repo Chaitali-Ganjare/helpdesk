@@ -36,9 +36,15 @@ export const ticketListQuerySchema = z.object({
 });
 export type TicketListQuery = z.infer<typeof ticketListQuerySchema>;
 
-// `assignedToId: null` unassigns the ticket.
+// Sentinel value selecting the AI pseudo-assignee — there's no AI user row
+// (User is tied into better-auth's login/session model), so "assigned to AI"
+// is a plain flag on Ticket (assignedToAI) rather than a real assignedToId.
+export const AI_ASSIGNEE = "AI";
+
+// `assignedTo: null` unassigns the ticket; `assignedTo: "AI"` assigns it to
+// AI; any other string is a User id.
 export const assignTicketSchema = z.object({
-  assignedToId: z.string().min(1).nullable(),
+  assignedTo: z.union([z.literal(AI_ASSIGNEE), z.string().min(1)]).nullable(),
 });
 export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
 

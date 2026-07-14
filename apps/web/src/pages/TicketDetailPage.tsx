@@ -6,10 +6,11 @@ import { TicketStatus } from "@helpdesk/core/enums/ticket-status";
 import { TicketCategory } from "@helpdesk/core/enums/ticket-category";
 import { TicketPriority } from "@helpdesk/core/enums/ticket-priority";
 import { ReplySenderType } from "@helpdesk/core/enums/reply-sender-type";
-import type {
-  AssignTicketInput,
-  UpdateTicketStatusInput,
-  UpdateTicketCategoryInput,
+import {
+  AI_ASSIGNEE,
+  type AssignTicketInput,
+  type UpdateTicketStatusInput,
+  type UpdateTicketCategoryInput,
 } from "@helpdesk/core/schemas/tickets";
 import type { Ticket } from "@helpdesk/core/types/tickets";
 import NavBar from "../components/NavBar";
@@ -235,13 +236,12 @@ export default function TicketDetailPage() {
                   <Select
                     id="assignee"
                     className={DETAIL_SELECT_CLASS}
-                    value={ticket.assignedTo?.id ?? ""}
+                    value={ticket.assignedToAI ? AI_ASSIGNEE : ticket.assignedTo?.id ?? ""}
                     disabled={assignMutation.isPending}
-                    onChange={(e) =>
-                      assignMutation.mutate({ assignedToId: e.target.value || null })
-                    }
+                    onChange={(e) => assignMutation.mutate({ assignedTo: e.target.value || null })}
                   >
                     <option value="">Unassigned</option>
+                    <option value={AI_ASSIGNEE}>AI</option>
                     {assignableUsers?.map((user) => (
                       <option key={user.id} value={user.id}>
                         {user.name}

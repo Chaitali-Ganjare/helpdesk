@@ -14,7 +14,11 @@ export interface Ticket {
   status: TicketStatus;
   category: TicketCategory | null;
   priority: TicketPriority | null;
+  // Mutually exclusive: a ticket is unassigned (both null/false), assigned to
+  // a human (assignedTo set, assignedToAI false), or assigned to AI
+  // (assignedTo null, assignedToAI true).
   assignedTo: { id: string; name: string } | null;
+  assignedToAI: boolean;
   createdAt: string;
   updatedAt: string;
 }
